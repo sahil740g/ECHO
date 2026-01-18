@@ -1,4 +1,4 @@
-import { PlusSquare, UserCircle } from "lucide-react";
+import {PlusSquare, UserCircle} from "lucide-react";
 const NavbarActions=()=>{
   return(
     <div className="flex items-center gap-3 whitespace-nowrap">
@@ -6,7 +6,7 @@ const NavbarActions=()=>{
         <PlusSquare size={18}/>
         New Post
       </button>
-      <button className="p-2 rounded-full hover:bg-transparent cursor-pointer">
+      <button className="p-2 rounded-full hover:bg-gray-800 cursor-pointer">
         <UserCircle size={42}/>
       </button>
     </div>
