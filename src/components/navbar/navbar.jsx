@@ -1,7 +1,6 @@
 import LogoSection from "./logosection";
 import SearchBar from "./searchbar";
 import NavbarActions from "./navbaractions";
-
 const Navbar=()=>{
   return (
     <nav className="w-full h-16 flex items-center bg-gray-900 px-6 border-b">

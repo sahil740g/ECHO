@@ -1,5 +1,4 @@
 import logo from "../../assets/ECHO_LOGO.png";
-
 const LogoSection=()=>{
   return(
     <div className="flex items-center gap-2 whitespace-nowrap">

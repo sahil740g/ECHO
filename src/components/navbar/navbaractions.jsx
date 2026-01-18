@@ -1,5 +1,4 @@
 import { PlusSquare, UserCircle } from "lucide-react";
-
 const NavbarActions=()=>{
   return(
     <div className="flex items-center gap-3 whitespace-nowrap">
