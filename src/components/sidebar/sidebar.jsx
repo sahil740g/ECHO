@@ -1,10 +1,10 @@
-import {HousePlus, MessageCircleQuestionMark, TrendingUp, Users} from "lucide-react";
+import {Newspaper, MessageCircleQuestion, TrendingUp, Users} from "lucide-react";
 const Sidebar=()=>{
     return(
-        <aside className="fixed top-16 left-0 w-50 h-[calc(100vh-4rem)] bg-gray-900 border-r border-gray-600 z-40">
+        <aside className="fixed top-16 left-0 w-52 h-[calc(100vh-4rem)] bg-gray-900 border-r border-gray-600 z-40">
             <nav className="space-y-1">
-                <SidebarItem icon={HousePlus} text="Home"/>
-                <SidebarItem icon={MessageCircleQuestionMark} text="Query"/>
+                <SidebarItem icon={Newspaper} text="Feed"/>
+                <SidebarItem icon={MessageCircleQuestion} text="Query"/>
                 <SidebarItem icon={TrendingUp} text="Trending"/>
                 <SidebarItem icon={Users} text="Community"/>
             </nav>
