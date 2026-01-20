@@ -1,13 +1,10 @@
 @import "tailwindcss";
-@theme {
-  --color-background: #000000;
-  --color-foreground: #ffffff;
-}
-body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-}
+
+html,
+body,
 #root{
-  min-height: 100%;
-  background-color: black;
+  height: 100%;
+  margin: 0;
+  background-color: #000;
+  color: #fff;
 }
