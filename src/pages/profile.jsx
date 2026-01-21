@@ -62,9 +62,9 @@ function Profile() {
                 <div className="flex-1">
                     {/* Header - Minimalist */}
                     <div className="mb-12">
-                        <div className="flex items-start justify-between">
-                            <div className="flex gap-6 items-start">
-                                <div className="w-24 h-24 rounded-full bg-zinc-800 overflow-hidden relative group">
+                        <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-0">
+                            <div className="flex gap-4 md:gap-6 items-start w-full md:w-auto">
+                                <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-full bg-zinc-800 overflow-hidden relative group">
                                     {user.avatar ? (
                                         <img src={user.avatar} alt={profileData.name} className="w-full h-full object-cover" />
                                     ) : (
@@ -74,11 +74,11 @@ function Profile() {
                                     )}
                                 </div>
 
-                                <div className="pt-2">
-                                    <h1 className="text-3xl font-bold text-white mb-2">{profileData.name}</h1>
-                                    <p className="text-zinc-500 text-sm mb-4">{profileData.handle}</p>
+                                <div className="pt-1 md:pt-2 flex-1">
+                                    <h1 className="text-2xl md:text-3xl font-bold text-white mb-1 md:mb-2">{profileData.name}</h1>
+                                    <p className="text-zinc-500 text-sm mb-3 md:mb-4">{profileData.handle}</p>
 
-                                    <div className="flex gap-6 text-sm">
+                                    <div className="flex gap-4 md:gap-6 text-sm">
                                         <div className="text-zinc-300"><span className="font-bold text-white">{profileData.stats.posts}</span> posts</div>
                                         <div className="text-zinc-300"><span className="font-bold text-white">{profileData.stats.followers}</span> followers</div>
                                         <div className="text-zinc-300"><span className="font-bold text-white">{profileData.stats.following}</span> following</div>
@@ -86,7 +86,7 @@ function Profile() {
                                 </div>
                             </div>
 
-                            <button className="px-4 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-zinc-200 transition">
+                            <button className="w-full md:w-auto px-4 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-zinc-200 transition mt-4 md:mt-0">
                                 Edit profile
                             </button>
                         </div>
