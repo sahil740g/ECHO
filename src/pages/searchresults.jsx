@@ -16,8 +16,8 @@ const SearchResults = () => {
     );
 
     return (
-        <div className="w-full md:w-[calc(100vw-13rem)] mx-auto py-8 flex flex-col min-h-[calc(100vh-4rem)]">
-            <h1 className="text-2xl font-bold mb-6 flex items-center gap-3">
+        <div className="w-full md:w-[calc(100vw-13rem)] mx-auto py-8 px-4 md:px-0 flex flex-col min-h-[calc(100vh-4rem)]">
+            <h1 className="text-2xl font-bold mb-6 flex items-center justify-center md:justify-start gap-3">
                 <Search className="text-blue-500" />
                 Search Results for <span className="text-blue-400">"{query}"</span>
             </h1>

@@ -1,6 +1,6 @@
-import { PlusSquare, UserCircle, User, Bookmark, Settings, LogOut } from "lucide-react";
+import { PlusSquare, UserCircle, User, Bookmark, Settings, LogOut, Search, ArrowLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import NewPostModal from "./newpostmodal";
 import AuthModal from "./authmodal";
 import { useAuth } from "../../context/authcontext";
@@ -9,8 +9,11 @@ const NavbarActions = () => {
   const [isNewPostModalOpen, setIsNewPostModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [mobileQuery, setMobileQuery] = useState("");
   const dropdownRef = useRef(null);
   const { user, login, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -23,11 +26,47 @@ const NavbarActions = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleMobileSearch = (e) => {
+    if (e.key === "Enter" && mobileQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(mobileQuery)}`);
+      setShowMobileSearch(false);
+      setMobileQuery("");
+    }
+  };
+
   return (
     <div className="flex items-center gap-3 whitespace-nowrap">
+      {/* Mobile Search Overlay */}
+      {showMobileSearch && (
+        <div className="absolute top-0 left-0 w-full h-16 bg-[#0d1117] flex items-center px-4 z-50 border-b border-white/10 md:hidden">
+          <button onClick={() => setShowMobileSearch(false)} className="text-zinc-400 mr-4">
+            <ArrowLeft size={24} />
+          </button>
+          <div className="flex-1 flex items-center bg-zinc-800/50 rounded-full px-4 py-2">
+            <Search size={18} className="text-zinc-500 mr-2" />
+            <input
+              autoFocus
+              type="text"
+              value={mobileQuery}
+              onChange={(e) => setMobileQuery(e.target.value)}
+              onKeyDown={handleMobileSearch}
+              placeholder="Search..."
+              className="bg-transparent border-none outline-none text-white w-full text-sm"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Search Trigger */}
+      <button
+        onClick={() => setShowMobileSearch(true)}
+        className="p-2 text-zinc-400 hover:text-white md:hidden"
+      >
+        <Search size={24} />
+      </button>
       <button
         onClick={() => setIsNewPostModalOpen(true)}
-        className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm hover:bg-blue-500 hover:text-white cursor-pointer transition"
+        className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm hover:bg-blue-500 hover:text-white cursor-pointer transition"
       >
         <PlusSquare size={18} />
         New Post
@@ -46,7 +85,8 @@ const NavbarActions = () => {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className={`p-2 rounded-full hover:bg-white/10 cursor-pointer transition ${isDropdownOpen ? "text-white bg-white/10" : "text-zinc-400 hover:text-white"}`}
           >
-            <UserCircle size={40} />
+            <UserCircle size={40} className="hidden md:block" />
+            <Settings size={24} className="block md:hidden" />
           </button>
 
           {
