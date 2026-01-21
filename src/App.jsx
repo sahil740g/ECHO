@@ -6,13 +6,16 @@ import Query from "./pages/query";
 import Trending from "./pages/trending";
 import Community from "./pages/community";
 import PostDetails from "./pages/postdetails";
+import Profile from "./pages/profile";
+import SearchResults from "./pages/searchresults";
+import BottomNav from "./components/bottomnav/bottomnav";
 function App() {
   return (
     <>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className="pt-16 pl-52 min-h-screen overflow-x-hidden">
+        <main className="pt-16 pb-20 md:pb-0 pl-0 md:pl-52 min-h-screen overflow-x-hidden">
           <Routes>
             <Route path="/" element={<Navigate to="/feed" />} />
             <Route path="/post/:postId" element={<PostDetails />} />
@@ -20,9 +23,12 @@ function App() {
             <Route path="/query" element={<Query />} />
             <Route path="/trending" element={<Trending />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/search" element={<SearchResults />} />
           </Routes>
         </main>
       </div>
+      <BottomNav />
     </>
   );
 }

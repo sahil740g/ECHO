@@ -1,11 +1,12 @@
 import PostCard from "../components/postcard/postcard";
+import { usePosts } from "../context/postscontext";
 function Feed() {
+    const { posts } = usePosts();
     return (
         <div className="p-6 max-w-3xl mx-auto space-y-4">
-            <PostCard postId="1" />
-            <PostCard postId="2" />
-            <PostCard postId="3" />
-            <PostCard postId="4" />
+            {posts.map(post => (
+                <PostCard key={post.id} {...post} />
+            ))}
         </div>
     )
 }

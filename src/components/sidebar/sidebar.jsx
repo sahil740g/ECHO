@@ -6,7 +6,7 @@ const Sidebar = () => {
     const [isResourcesOpen, setIsResourcesOpen] = useState(false);
 
     return (
-        <aside className="fixed top-16 left-0 w-52 h-[calc(100vh-4rem)] bg-gray-900 border-r border-gray-600 z-40">
+        <aside className="hidden md:block fixed top-16 left-0 w-52 h-[calc(100vh-4rem)] bg-[#0d1117]/80 backdrop-blur-md border-r border-white/5 z-40">
             <nav className="space-y-1 p-2">
                 <SidebarItem to="/feed" icon={Newspaper} text="Feed" />
                 <SidebarItem to="/query" icon={MessageCircleQuestion} text="Query" />
@@ -45,7 +45,7 @@ const Sidebar = () => {
 
 function SidebarItem({ icon: Icon, text, to, small = false }) {
     return (
-        <NavLink to={to} className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition ${isActive ? "bg-white text-gray-900" : "text-zinc-300 hover:bg-gray-800 hover:text-white"} ${small ? "text-xs" : "text-sm"}`}>
+        <NavLink to={to} className={({ isActive }) => `flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition duration-300 ${isActive ? "bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]" : "text-zinc-400 hover:text-white hover:bg-white/5"} ${small ? "text-xs" : "text-sm"}`}>
             <Icon size={small ? 16 : 20} />
             <span className={`font-medium ${small ? "text-xs" : "text-sm"}`}>{text}</span>
         </NavLink>
