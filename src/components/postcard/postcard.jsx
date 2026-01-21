@@ -39,8 +39,8 @@ function PostCard({
 
     const navigate = useNavigate();
     return (
-        <article className="bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl p-5 shadow-lg hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.3)] hover:border-blue-500/30 transition duration-300 group">
-            <div className="flex gap-4">
+        <article className="bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl p-3 md:p-5 shadow-lg hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.3)] hover:border-blue-500/30 transition duration-300 group">
+            <div className="flex gap-3 md:gap-4">
                 <div className="flex flex-col items-center gap-1 w-12 flex-shrink-0">
                     <button onClick={() => votePost(id, 'up')}
                         className={`p-1 rounded transition ${userVote === "up" ? "text-blue-500" : "text-zinc-400 hover:text-blue-400"}`}>
