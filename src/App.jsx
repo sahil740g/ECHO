@@ -9,7 +9,15 @@ import PostDetails from "./pages/postdetails";
 import Profile from "./pages/profile";
 import SearchResults from "./pages/searchresults";
 import BottomNav from "./components/bottomnav/bottomnav";
+import SplashScreen from "./components/splashscreen/splashscreen";
+import { useState } from "react";
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  if (isLoading) {
+    return <SplashScreen onFinish={() => setIsLoading(false)} />;
+  }
+
   return (
     <>
       <Navbar />

@@ -1,19 +1,31 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit2, Plus, Trophy, Share2, MapPin, Link as LinkIcon, Calendar, Twitter, Github, Linkedin, Instagram, Tag } from "lucide-react";
+import { Edit2, Plus, Trophy, Share2, MapPin, Link as LinkIcon, Calendar, X, Github, Linkedin, Instagram, Tag } from "lucide-react";
 import { useAuth } from "../context/authcontext";
+import { usePosts } from "../context/postscontext";
+import PostCard from "../components/postcard/postcard";
+
+import EditProfileModal from "../components/profile/editprofilemodal";
 
 function Profile() {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
+    const { posts } = usePosts();
+    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+
+    const savedPostsIds = user?.savedPosts || [];
+    const savedPosts = posts.filter(post => savedPostsIds.includes(post.id));
 
     // Mock data for display since user object is minimal
     const profileData = {
         name: user?.name || "Dishant Savadia",
         handle: user?.handle || "@dishantsav123",
-        bio: "Full Stack Developer 👨‍💻 | React, Node.js, Python | Building cool stuff 🚀 | Open Source Enthusiast",
-        location: "Mumbai, India",
-        website: "portfolio.dev",
+        bio: user?.bio || "Full Stack Developer 👨‍💻 | React, Node.js, Python | Building cool stuff 🚀 | Open Source Enthusiast",
+        location: user?.location || "Mumbai, India",
+        website: user?.website || "portfolio.dev",
+        avatar: user?.avatar,
+        coverImage: user?.coverImage || "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80",
         joinDate: "January 2024",
+        socials: user?.socials || {}, // fallback to empty object
         stats: {
             followers: 1240,
             following: 56,
@@ -24,6 +36,11 @@ function Profile() {
             { icon: <Share2 className="text-blue-500" size={20} />, title: "Viral Post", desc: "Post reached 10k views" },
             { icon: <Edit2 className="text-green-500" size={20} />, title: "Writer", desc: "Published 10+ articles" },
         ]
+    };
+
+    const handleSaveProfile = (updatedData) => {
+        updateUser(updatedData);
+        setIsEditModalOpen(false);
     };
 
     const [activeTab, setActiveTab] = React.useState('posts');
@@ -48,10 +65,16 @@ function Profile() {
 
     return (
         <div className="w-full md:w-[calc(100vw-13rem)] max-w-7xl mx-auto p-4 md:p-8 pt-6">
+            <EditProfileModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                initialData={profileData}
+                onSave={handleSaveProfile}
+            />
             {/* Cover Image */}
-            <div className="h-64 rounded-xl bg-gradient-to-r from-zinc-800 to-zinc-900 mb-8 overflow-hidden relative group">
+            <div className="h-48 rounded-xl bg-gradient-to-r from-zinc-800 to-zinc-900 mb-8 overflow-hidden relative group">
                 <img
-                    src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80"
+                    src={profileData.coverImage}
                     alt="Cover"
                     className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition duration-700"
                 />
@@ -65,8 +88,8 @@ function Profile() {
                         <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-0">
                             <div className="flex gap-4 md:gap-6 items-start w-full md:w-auto">
                                 <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-full bg-zinc-800 overflow-hidden relative group">
-                                    {user.avatar ? (
-                                        <img src={user.avatar} alt={profileData.name} className="w-full h-full object-cover" />
+                                    {profileData.avatar ? (
+                                        <img src={profileData.avatar} alt={profileData.name} className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-3xl font-bold text-white">
                                             {profileData.name[0]}
@@ -86,7 +109,10 @@ function Profile() {
                                 </div>
                             </div>
 
-                            <button className="w-full md:w-auto px-4 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-zinc-200 transition mt-4 md:mt-0">
+                            <button
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="w-full md:w-auto px-4 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-zinc-200 transition mt-4 md:mt-0"
+                            >
                                 Edit profile
                             </button>
                         </div>
@@ -103,13 +129,20 @@ function Profile() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <LinkIcon size={14} />
-                                    <a href="#" className="hover:text-white transition">{profileData.website}</a>
+                                    <a
+                                        href={profileData.website.startsWith('http') ? profileData.website : `https://${profileData.website}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hover:text-white transition"
+                                    >
+                                        {profileData.website}
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Content Tabs (Placeholder for future posts) */}
+                    {/* Content Tabs */}
                     <div className="border-t border-zinc-800">
                         <div className="flex justify-center gap-12 text-xs font-medium tracking-wider uppercase text-zinc-500 mb-8">
                             {['posts', 'saved', 'tagged'].map((tab) => (
@@ -129,32 +162,34 @@ function Profile() {
 
                         {/* Tab Content */}
                         {activeTab === 'posts' ? (
-                            <div className="grid grid-cols-3 gap-6">
-                                {mockPosts.map((post) => (
-                                    <div key={post.id} className="aspect-square bg-zinc-900 rounded-md overflow-hidden group relative cursor-pointer">
-                                        <img
-                                            src={post.image}
-                                            alt="Post"
-                                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-6 text-white font-bold">
-                                            <div className="flex items-center gap-2">
-                                                <Trophy size={20} className="fill-white" /> {post.likes}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Share2 size={20} className="fill-white" /> {post.comments}
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div className="grid grid-cols-1 gap-6">
+                                {posts.map((post) => (
+                                    <PostCard key={post.id} {...post} />
                                 ))}
+                            </div>
+                        ) : activeTab === 'saved' ? (
+                            <div className="space-y-6">
+                                {savedPosts.length > 0 ? (
+                                    savedPosts.map(post => (
+                                        <PostCard key={post.id} {...post} />
+                                    ))
+                                ) : (
+                                    <div className="py-20 text-center">
+                                        <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-500">
+                                            <Share2 size={24} />
+                                        </div>
+                                        <h3 className="text-white font-bold mb-2">No saved posts</h3>
+                                        <p className="text-zinc-500 text-sm">Posts you bookmark will appear here</p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="py-20 text-center">
                                 <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-500">
-                                    {activeTab === 'saved' ? <Share2 size={24} /> : <Tag size={24} />}
+                                    <Tag size={24} />
                                 </div>
-                                <h3 className="text-white font-bold mb-2">No {activeTab} posts</h3>
-                                <p className="text-zinc-500 text-sm">Posts you {activeTab} will appear here</p>
+                                <h3 className="text-white font-bold mb-2">No tagged posts</h3>
+                                <p className="text-zinc-500 text-sm">Posts you are tagged in will appear here</p>
                             </div>
                         )}
                     </div>
@@ -187,25 +222,42 @@ function Profile() {
                         </div>
 
                         <div className="space-y-4">
-                            <a href="#" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
-                                <Twitter size={16} />
-                                Twitter
-                            </a>
-                            <a href="#" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
-                                <Github size={16} />
-                                GitHub
-                            </a>
-                            <a href="#" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
-                                <Linkedin size={16} />
-                                LinkedIn
-                            </a>
-                            <a href="#" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
-                                <Instagram size={16} />
-                                Instagram
-                            </a>
+                            {profileData.socials.x && (
+                                <a href={profileData.socials.x} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                    <X size={16} />
+                                    X
+                                </a>
+                            )}
+                            {profileData.socials.github && (
+                                <a href={profileData.socials.github} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                    <Github size={16} />
+                                    GitHub
+                                </a>
+                            )}
+                            {profileData.socials.linkedin && (
+                                <a href={profileData.socials.linkedin} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                    <Linkedin size={16} />
+                                    LinkedIn
+                                </a>
+                            )}
+                            {profileData.socials.instagram && (
+                                <a href={profileData.socials.instagram} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                    <Instagram size={16} />
+                                    Instagram
+                                </a>
+                            )}
+
+                            {!profileData.socials.x && !profileData.socials.github && !profileData.socials.linkedin && !profileData.socials.instagram && (
+                                <div className="text-zinc-500 text-sm italic">
+                                    No links added
+                                </div>
+                            )}
                         </div>
 
-                        <button className="mt-6 text-sm text-zinc-500 hover:text-zinc-300 transition flex items-center gap-2">
+                        <button
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="mt-6 text-sm text-zinc-500 hover:text-zinc-300 transition flex items-center gap-2"
+                        >
                             <Plus size={14} />
                             Add link
                         </button>

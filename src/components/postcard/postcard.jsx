@@ -1,7 +1,10 @@
-import { ThumbsUp, ThumbsDown, MessageSquare, Code, Check } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Code, Check, Bookmark, Share2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePosts } from "../../context/postscontext";
+import { useComments } from "../../context/commentscontext";
+import { useAuth } from "../../context/authcontext";
+
 function PostCard({
     id,
     votes = 142,
@@ -13,19 +16,26 @@ function PostCard({
     description = "Just finished implementing a real-time collaboration, The performance are incredible",
     tags = ["WebSockets", "JavaScript"],
     avatar,
-    commentsCount = 15,
-    codeSnippet = `const socket = new WebSocket("ws://localhost:8080");
-    socket.onmessage = (event) => {
-        console.log(event.data);
-    };`
+
+    commentsCount: initialCommentsCount = 15, // Rename prop to avoid conflict/confusion
+    codeSnippet = null
 }) {
     const { votePost } = usePosts();
+    const { getCommentCount } = useComments();
+    const { user, toggleBookmark } = useAuth();
     const [showCode, setShowCode] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
+    const [isShared, setIsShared] = useState(false);
+
+    const isBookmarked = user?.savedPosts?.includes(id);
 
     // Derived state for display
     const voteCount = votes;
     const userVote = propsUserVote;
+
+    // Get real comment count from context, fallback to prop if not found (or if 0 and maybe prop has value? context implies source of truth though)
+    const realCommentCount = getCommentCount(id);
+    const displayCommentsCount = realCommentCount > 0 ? realCommentCount : initialCommentsCount;
 
     const handleCopy = async () => {
         try {
@@ -34,6 +44,16 @@ function PostCard({
             setTimeout(() => setIsCopied(false), 2000);
         } catch (err) {
             console.error("Failed to copy!", err);
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            await navigator.clipboard.writeText(`${window.location.origin}/post/${id}`);
+            setIsShared(true);
+            setTimeout(() => setIsShared(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy link!", err);
         }
     };
 
@@ -71,15 +91,27 @@ function PostCard({
                         ))}
                     </div>
                     <div className="flex items-center justify-between text-xs text-zinc-400">
-                        <button onClick={() => navigate(`/post/1`)} className="flex items-center gap-2 hover:text-white transition">
-                            <MessageSquare size={14} />
-                            <span>{commentsCount} comments</span>
-                        </button>
-                        <button onClick={() => setShowCode(!showCode)} className="flex items-center gap-1 text-blue-400 hover:text-blue-300">
-                            <Code size={14} />{showCode ? "Hide Code" : "View Code"}
-                        </button>
+                        <div className="flex gap-4">
+                            <button onClick={() => navigate(`/post/${id}`)} className="flex items-center gap-2 hover:text-white transition">
+                                <MessageSquare size={14} />
+                                <span>{displayCommentsCount} comments</span>
+                            </button>
+                            <button onClick={() => toggleBookmark(id)} className={`flex items-center gap-2 transition ${isBookmarked ? "text-yellow-500" : "hover:text-white"}`}>
+                                <Bookmark size={14} fill={isBookmarked ? "currentColor" : "none"} />
+                                <span>{isBookmarked ? "Saved" : "Save"}</span>
+                            </button>
+                            <button onClick={handleShare} className="flex items-center gap-2 hover:text-white transition">
+                                {isShared ? <Check size={14} className="text-green-500" /> : <Share2 size={14} />}
+                                <span className={isShared ? "text-green-500" : ""}>{isShared ? "Copied Link" : "Share"}</span>
+                            </button>
+                        </div>
+                        {codeSnippet && (
+                            <button onClick={() => setShowCode(!showCode)} className="flex items-center gap-1 text-blue-400 hover:text-blue-300">
+                                <Code size={14} />{showCode ? "Hide Code" : "View Code"}
+                            </button>
+                        )}
                     </div>
-                    {showCode && (
+                    {showCode && codeSnippet && (
                         <div className="mt-4 mb-4 rounded-lg border border-white/10 overflow-hidden bg-[#0d1117]">
                             <div className="flex justify-between items-center px-3 py-2 bg-[#161b22] text-xs text-zinc-400">
                                 <span>JavaScript</span>
