@@ -106,7 +106,7 @@ const AuthModal=({isOpen,onClose})=>{
                         </div>
                     </div>
                     <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-medium transition cursor-pointer mt-2">
-                        {isLogin ? "Sign In" : "Sign Up"}
+                        {isLogin?"Sign In":"Sign Up"}
                     </button>
                 </form>
                 <div className="mt-6 text-center text-sm text-zinc-400">

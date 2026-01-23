@@ -1,6 +1,6 @@
 import { PlusSquare, UserCircle, User, Bookmark, Settings, LogOut, Search, ArrowLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import NewPostModal from "./newpostmodal";
 import AuthModal from "./authmodal";
 import { useAuth } from "../../context/authcontext";
@@ -14,8 +14,8 @@ const NavbarActions = () => {
   const dropdownRef = useRef(null);
   const { user, login, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -25,7 +25,6 @@ const NavbarActions = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   const handleMobileSearch = (e) => {
     if (e.key === "Enter" && mobileQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(mobileQuery)}`);
@@ -33,10 +32,8 @@ const NavbarActions = () => {
       setMobileQuery("");
     }
   };
-
   return (
     <div className="flex items-center gap-3 whitespace-nowrap">
-      {/* Mobile Search Overlay */}
       {showMobileSearch && (
         <div className="absolute top-0 left-0 w-full h-16 bg-[#0d1117] flex items-center px-4 z-50 border-b border-white/10 md:hidden">
           <button onClick={() => setShowMobileSearch(false)} className="text-zinc-400 mr-4">
@@ -56,30 +53,14 @@ const NavbarActions = () => {
           </div>
         </div>
       )}
-
-      {/* Mobile Search Trigger */}
-      <button
-        onClick={() => setShowMobileSearch(true)}
-        className="p-2 text-zinc-400 hover:text-white md:hidden"
-      >
+      <button onClick={() => setShowMobileSearch(true)} className="p-2 text-zinc-400 hover:text-white md:hidden">
         <Search size={24} />
       </button>
-      <button
-        onClick={() => setIsNewPostModalOpen(true)}
-        className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm hover:bg-blue-500 hover:text-white cursor-pointer transition"
-      >
+      <button onClick={() => setIsNewPostModalOpen(true)} className="hidden md:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm hover:bg-blue-500 hover:text-white cursor-pointer transition">
         <PlusSquare size={18} />
-        New Post
+        {location.pathname === '/query' ? 'New Query' : 'New Post'}
       </button>
-      {!user ? (
-        <button
-          onClick={() => setIsAuthModalOpen(true)}
-          className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition cursor-pointer"
-        >
-          Log in
-        </button>
-      ) : (
-
+      {!user ? (<button onClick={() => setIsAuthModalOpen(true)} className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition cursor-pointer">Log in</button>) : (
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -125,7 +106,11 @@ const NavbarActions = () => {
         </div >
       )}
 
-      <NewPostModal isOpen={isNewPostModalOpen} onClose={() => setIsNewPostModalOpen(false)} />
+      <NewPostModal
+        isOpen={isNewPostModalOpen}
+        onClose={() => setIsNewPostModalOpen(false)}
+        isQuery={location.pathname === '/query'}
+      />
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div >
   );

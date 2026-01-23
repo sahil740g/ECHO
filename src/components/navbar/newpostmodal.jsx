@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Image, Code } from "lucide-react";
 import { usePosts } from "../../context/postscontext";
 
-const NewPostModal = ({ isOpen, onClose }) => {
+const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [tags, setTags] = useState("");
@@ -21,7 +21,8 @@ const NewPostModal = ({ isOpen, onClose }) => {
             title,
             description,
             tags: tags.split(",").map(tag => tag.trim()).filter(tag => tag),
-            codeSnippet: showCodeInput ? codeSnippet : null
+            codeSnippet: showCodeInput ? codeSnippet : null,
+            type: isQuery ? 'query' : 'post' // You might want to track this in your post data
         };
 
         addPost(newPost);
@@ -45,7 +46,7 @@ const NewPostModal = ({ isOpen, onClose }) => {
                     <X size={20} />
                 </button>
 
-                <h2 className="text-xl font-bold text-white mb-6">Create New Post</h2>
+                <h2 className="text-xl font-bold text-white mb-6">{isQuery ? "New Query" : "Create New Post"}</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -54,7 +55,7 @@ const NewPostModal = ({ isOpen, onClose }) => {
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="What's interesting?"
+                            placeholder={isQuery ? "What's your question?" : "What's interesting?"}
                             className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition"
                             required
                         />
@@ -65,7 +66,7 @@ const NewPostModal = ({ isOpen, onClose }) => {
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Share your thoughts..."
+                            placeholder={isQuery ? "Describe your issue..." : "Share your thoughts..."}
                             rows={3}
                             className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition resize-none"
                             required
@@ -122,7 +123,7 @@ const NewPostModal = ({ isOpen, onClose }) => {
                             type="submit"
                             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition cursor-pointer"
                         >
-                            Post
+                            {isQuery ? "Ask Query" : "Post"}
                         </button>
                     </div>
                 </form>
