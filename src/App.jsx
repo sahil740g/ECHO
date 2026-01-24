@@ -23,7 +23,7 @@ function App() {
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className="pt-16 pb-20 md:pb-0 pl-0 md:pl-52 min-h-screen">
+        <main className="pt-16 pb-20 md:pb-0 pl-0 md:pl-52 min-h-screen w-full">
           <Routes>
             <Route path="/" element={<Navigate to="/feed" />} />
             <Route path="/post/:postId" element={<PostDetails />} />

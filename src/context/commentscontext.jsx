@@ -1,7 +1,7 @@
-import { createContext, useContext, useState } from "react";
-const CommentsContext = createContext();
-export function CommentsProvider({ children }) {
-  const [posts, setPosts] = useState({
+import {createContext,useContext,useState} from "react";
+const CommentsContext=createContext();
+export function CommentsProvider({children}){
+  const [posts, setPosts]=useState({
     1: {
       id: "1",
       comments: [

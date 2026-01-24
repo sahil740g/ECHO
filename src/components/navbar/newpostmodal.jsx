@@ -36,6 +36,14 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         onClose();
     };
 
+    const handleKeyDown = (e) => {
+        // Submit on Enter (without Shift) for EVERYTHING
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+        }
+    };
+
     return createPortal(
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] backdrop-blur-sm">
             <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
@@ -55,6 +63,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             placeholder={isQuery ? "What's your question?" : "What's interesting?"}
                             className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition"
                             required
@@ -66,6 +75,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             placeholder={isQuery ? "Describe your issue..." : "Share your thoughts..."}
                             rows={3}
                             className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition resize-none"
@@ -79,6 +89,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                             type="text"
                             value={tags}
                             onChange={(e) => setTags(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             placeholder="react, javascript, webdev"
                             className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition"
                         />
@@ -99,6 +110,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                             <textarea
                                 value={codeSnippet}
                                 onChange={(e) => setCodeSnippet(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 placeholder="// Paste your code here..."
                                 rows={4}
                                 className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-4 py-2 text-green-400 font-mono text-sm placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition resize-none"

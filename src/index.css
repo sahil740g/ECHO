@@ -4,7 +4,6 @@ html,
 body,
 #root {
   height: 100%;
-  scrollbar-gutter: stable;
   margin: 0;
   background-color: #0f1117;
   color: #fff;
@@ -23,4 +22,13 @@ h4,
 h5,
 h6 {
   font-family: 'Outfit', sans-serif;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

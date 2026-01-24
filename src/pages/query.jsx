@@ -1,40 +1,33 @@
-import CommunityStats from "../components/stats/communitystats";
-import TrendingLanguages from "../components/trending/trendinglanguages";
 import { usePosts } from "../context/postscontext";
 import PostCard from "../components/postcard/postcard";
+import FeedLayout from "../components/layout/FeedLayout";
 import { MessageCircleQuestion } from "lucide-react";
 
 export default function Query() {
     const { posts } = usePosts();
+
+    // STRICTLY Filter posts for only those of type 'query'
     const queryPosts = posts.filter(post => post.type === 'query');
 
     return (
-        <div className="max-w-6xl mx-auto p-4 md:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
-                    <h1 className="text-2xl font-bold mb-4">Community Queries</h1>
-
-                    {queryPosts.length > 0 ? (
-                        queryPosts.map(post => (
-                            <PostCard key={post.id} {...post} />
-                        ))
-                    ) : (
-                        <div className="bg-[#1A1A1A] p-10 rounded-xl border border-gray-800 text-center flex flex-col items-center">
-                            <div className="w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mb-4 text-gray-400">
-                                <MessageCircleQuestion size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">No queries yet</h3>
-                            <p className="text-gray-400 max-w-md">
-                                Be the first to ask a question to the community! Click "New Query" in the navigation bar.
-                            </p>
-                        </div>
-                    )}
+        <FeedLayout showSidebar={false}>
+            {queryPosts.length > 0 ? (
+                <>
+                    {queryPosts.map(post => (
+                        <PostCard key={post.id} {...post} />
+                    ))}
+                </>
+            ) : (
+                <div className="w-full bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl p-12 shadow-lg flex flex-col items-center justify-center min-h-[400px] text-center">
+                    <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 text-blue-400">
+                        <MessageCircleQuestion size={40} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">No queries yet</h3>
+                    <p className="text-zinc-400 max-w-md mx-auto mb-8 text-lg">
+                        Have a technical question? Ask the community and get help!
+                    </p>
                 </div>
-                <div className="hidden lg:block space-y-6 sticky top-24 h-fit">
-                    <CommunityStats />
-                    <TrendingLanguages />
-                </div>
-            </div>
-        </div>
+            )}
+        </FeedLayout>
     );
 }

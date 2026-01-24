@@ -59,8 +59,8 @@ function PostCard({
 
     const navigate = useNavigate();
     return (
-        <article className="bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl p-3 md:p-5 shadow-lg hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.3)] hover:border-blue-500/30 transition duration-300 group">
-            <div className="flex gap-3 md:gap-4">
+        <article className="block w-full bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl p-3 md:p-5 shadow-lg hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.3)] hover:border-blue-500/30 transition duration-300 group">
+            <div className="flex gap-3 md:gap-4 h-full">
                 <div className="flex flex-col items-center gap-1 w-12 flex-shrink-0">
                     <button onClick={() => votePost(id, 'up')}
                         className={`p-1 rounded transition ${userVote === "up" ? "text-blue-500" : "text-zinc-400 hover:text-blue-400"}`}>
@@ -72,7 +72,7 @@ function PostCard({
                         <ThumbsDown size={18} />
                     </button>
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 flex flex-col min-h-[180px]">
                     <div className="flex items-center gap-3 mb-2">
                         <img src={avatar || "https://i.pravatar.cc/100"}
                             className="w-9 h-9 rounded-full border border-white/10" />
@@ -82,15 +82,17 @@ function PostCard({
                             <span className="ml-2">{time}</span>
                         </div>
                     </div>
-                    <h2 className="text-lg font-semibold text-white leading-snug mb-1">{title}</h2>
-                    <p className="text-sm text-zinc-400 leading-relaxed mb-3">{description}</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {tags.map((tag, i) => (
-                            <span key={i}
-                                className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium tracking-wide">#{tag}</span>
-                        ))}
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-zinc-400">
+                    <h2 className="text-lg font-semibold text-white leading-snug mb-1 break-all">{title}</h2>
+                    <p className="text-sm text-zinc-400 leading-relaxed mb-3 break-all">{description}</p>
+                    {tags && tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {tags.map((tag, i) => (
+                                <span key={i}
+                                    className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium tracking-wide">#{tag}</span>
+                            ))}
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mt-auto">
                         <div className="flex gap-4">
                             <button onClick={() => navigate(`/post/${id}`)} className="flex items-center gap-2 hover:text-white transition">
                                 <MessageSquare size={14} />

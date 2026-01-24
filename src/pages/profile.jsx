@@ -64,7 +64,7 @@ function Profile() {
     if (!user) return null;
 
     return (
-        <div className="w-full md:w-[calc(100vw-13rem)] max-w-7xl mx-auto p-4 md:p-8 pt-6">
+        <div className="w-full max-w-7xl mx-auto p-4 md:p-8 pt-6">
             <EditProfileModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}

@@ -32,6 +32,19 @@ socket.onmessage = (event) => {
             commentsCount: 32,
             userVote: null
         },
+        {
+            id: 3,
+            votes: 12,
+            username: "Alex Chen",
+            handle: "@alexc_dev",
+            time: "1h ago",
+            title: "How to fix React hydration error with extensive use of random values?",
+            description: "I'm getting 'Text content does not match server-rendered HTML' when using Math.random() in my components. What is the best practice for this?",
+            tags: ["React", "NextJS", "Hydration"],
+            commentsCount: 5,
+            userVote: null,
+            type: 'query'
+        },
     ]);
 
     const addPost = (newPost) => {
