@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Image, Code } from "lucide-react";
 import { usePosts } from "../../context/postscontext";
+import { mockUsers } from "../../data/mockUsers";
 
 const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const [title, setTitle] = useState("");
@@ -10,9 +11,38 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const [codeSnippet, setCodeSnippet] = useState("");
     const [showCodeInput, setShowCodeInput] = useState(false);
 
+    // Tagging state
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
     const { addPost } = usePosts();
 
     if (!isOpen) return null;
+
+    const handleDescriptionChange = (e) => {
+        const val = e.target.value;
+        setDescription(val);
+
+        const lastWord = val.split(/[\s\n]/).pop();
+        if (lastWord.startsWith('@') && lastWord.length > 1) {
+            const query = lastWord.slice(1).toLowerCase();
+            const filtered = mockUsers.filter(u =>
+                u.name.toLowerCase().includes(query) ||
+                u.handle.toLowerCase().includes(query)
+            );
+            setSuggestions(filtered);
+            setShowSuggestions(filtered.length > 0);
+        } else {
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleSelectUser = (handle) => {
+        const lastIndex = description.lastIndexOf('@');
+        const newText = description.substring(0, lastIndex) + handle + ' ';
+        setDescription(newText);
+        setShowSuggestions(false);
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -22,7 +52,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
             description,
             tags: tags.split(",").map(tag => tag.trim()).filter(tag => tag),
             codeSnippet: showCodeInput ? codeSnippet : null,
-            type: isQuery ? 'query' : 'post' // You might want to track this in your post data
+            type: isQuery ? 'query' : 'post'
         };
 
         addPost(newPost);
@@ -33,11 +63,12 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         setTags("");
         setCodeSnippet("");
         setShowCodeInput(false);
+        setSuggestions([]);
+        setShowSuggestions(false);
         onClose();
     };
 
     const handleKeyDown = (e) => {
-        // Submit on Enter (without Shift) for EVERYTHING
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSubmit(e);
@@ -70,11 +101,32 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                         />
                     </div>
 
-                    <div>
+                    <div className="relative">
                         <label className="block text-xs font-medium text-zinc-400 mb-1">Description</label>
+                        {showSuggestions && (
+                            <div className="absolute bottom-full left-0 mb-2 w-64 bg-[#161b22] border border-white/10 rounded-xl shadow-xl overflow-hidden z-20">
+                                {suggestions.map(user => (
+                                    <div
+                                        key={user.handle}
+                                        onClick={() => handleSelectUser(user.handle)}
+                                        className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer transition"
+                                    >
+                                        <img
+                                            src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                                            alt={user.name}
+                                            className="w-8 h-8 rounded-full"
+                                        />
+                                        <div>
+                                            <p className="text-white text-sm font-medium">{user.name}</p>
+                                            <p className="text-zinc-500 text-xs">{user.handle}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         <textarea
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={handleDescriptionChange}
                             onKeyDown={handleKeyDown}
                             placeholder={isQuery ? "Describe your issue..." : "Share your thoughts..."}
                             rows={3}

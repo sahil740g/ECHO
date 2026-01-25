@@ -7,12 +7,13 @@ import { useAuth } from "../../context/authcontext";
 
 const NavbarActions = () => {
   const [isNewPostModalOpen, setIsNewPostModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Removed local auth modal state in favor of context
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [mobileQuery, setMobileQuery] = useState("");
   const dropdownRef = useRef(null);
-  const { user, login, logout } = useAuth();
+  const { user, login, logout, isLoginModalOpen, openLoginModal, closeLoginModal } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,7 +61,7 @@ const NavbarActions = () => {
         <PlusSquare size={18} />
         {location.pathname === '/query' ? 'New Query' : 'New Post'}
       </button>
-      {!user ? (<button onClick={() => setIsAuthModalOpen(true)} className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition cursor-pointer">Log in</button>) : (
+      {!user ? (<button onClick={openLoginModal} className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition cursor-pointer">Log in</button>) : (
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -82,10 +83,7 @@ const NavbarActions = () => {
                     <User size={18} />
                     View Profile
                   </Link>
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-300 hover:bg-white/5 hover:text-white rounded-lg transition text-sm text-left">
-                    <Bookmark size={18} />
-                    Bookmarked Posts
-                  </button>
+
                 </div>
                 <div className="p-2 border-t border-white/5">
                   <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-300 hover:bg-white/5 hover:text-white rounded-lg transition text-sm text-left">
@@ -111,7 +109,7 @@ const NavbarActions = () => {
         onClose={() => setIsNewPostModalOpen(false)}
         isQuery={location.pathname === '/query'}
       />
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      <AuthModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
     </div >
   );
 };

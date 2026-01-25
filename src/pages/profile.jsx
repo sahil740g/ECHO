@@ -1,47 +1,117 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Edit2, Plus, Trophy, Share2, MapPin, Link as LinkIcon, Calendar, X, Github, Linkedin, Instagram, Tag } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Edit2, Plus, Trophy, Share2, MapPin, Link as LinkIcon, Calendar, X, Github, Linkedin, Instagram, Tag, UserCircle } from "lucide-react";
 import { useAuth } from "../context/authcontext";
+
 import { usePosts } from "../context/postscontext";
+import { useComments } from "../context/commentscontext";
 import PostCard from "../components/postcard/postcard";
+import { mockUsers } from "../data/mockUsers";
 
 import EditProfileModal from "../components/profile/editprofilemodal";
+import UserListModal from "../components/profile/userlistmodal";
 
 function Profile() {
-    const { user, updateUser } = useAuth();
+    const { username } = useParams();
+    const { user, updateUser, toggleFollow, openLoginModal } = useAuth();
     const { posts } = usePosts();
+    const { posts: commentsData } = useComments();
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+    // Initialize state properly inside useEffect or use derived state
+    const [isFollowing, setIsFollowing] = React.useState(false);
 
-    const savedPostsIds = user?.savedPosts || [];
+    // Modal State
+    const [isUserListModalOpen, setIsUserListModalOpen] = React.useState(false);
+    const [userListTitle, setUserListTitle] = React.useState("");
+    const [userListUsers, setUserListUsers] = React.useState([]);
+
+    const navigate = useNavigate();
+
+    // Determine which user to display
+    let displayUser;
+    let isOwnProfile = false;
+
+    if (!username) {
+        // No username param -> My Profile
+        displayUser = user;
+        isOwnProfile = true;
+    } else {
+        // Check if param matches logged-in user's handle (without @)
+        const myHandle = user?.handle?.replace('@', '');
+        if (myHandle === username) {
+            displayUser = user;
+            isOwnProfile = true;
+        } else {
+            // Look up in mockUsers
+            displayUser = mockUsers.find(u => u.handle.replace('@', '') === username);
+        }
+    }
+
+    const savedPostsIds = displayUser?.savedPosts || [];
     const savedPosts = posts.filter(post => savedPostsIds.includes(post.id));
 
-    // Mock data for display since user object is minimal
-    const profileData = {
-        name: user?.name || "Dishant Savadia",
-        handle: user?.handle || "@dishantsav123",
-        bio: user?.bio || "Full Stack Developer 👨‍💻 | React, Node.js, Python | Building cool stuff 🚀 | Open Source Enthusiast",
-        location: user?.location || "Mumbai, India",
-        website: user?.website || "portfolio.dev",
-        avatar: user?.avatar,
-        coverImage: user?.coverImage || "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80",
-        joinDate: "January 2024",
-        socials: user?.socials || {}, // fallback to empty object
-        stats: {
-            followers: 1240,
-            following: 56,
-            posts: 42
-        },
-        achievements: [
+
+    const taggedPosts = displayUser ? posts.filter(post => {
+        const handle = displayUser.handle.toLowerCase();
+        // Check description
+        if (post.description && post.description.toLowerCase().includes(handle)) return true;
+
+        // Check comments
+        const postCommentsData = commentsData[post.id];
+        if (postCommentsData && postCommentsData.comments) {
+            const checkComments = (comments) => {
+                for (const c of comments) {
+                    if (c.text.toLowerCase().includes(handle)) return true;
+                    if (c.replies && checkComments(c.replies)) return true;
+                }
+                return false;
+            };
+            if (checkComments(postCommentsData.comments)) return true;
+        }
+        return false;
+    }) : [];
+
+    // Consolidate profile data
+    const profileData = displayUser ? {
+        name: displayUser.name,
+        handle: displayUser.handle,
+        bio: displayUser.bio || "Full Stack Developer 👨‍💻 | React, Node.js, Python | Building cool stuff 🚀 | Open Source Enthusiast",
+        location: displayUser.location || "Mumbai, India",
+        website: displayUser.website || "portfolio.dev",
+        avatar: displayUser.avatar,
+        coverImage: displayUser.coverImage || "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80",
+        joinDate: displayUser.joinDate || "January 2024",
+        socials: displayUser.socials || {},
+        stats: displayUser.stats || { followers: 1240, following: 56, posts: 42 },
+        achievements: displayUser.achievements || [
             { icon: <Trophy className="text-yellow-500" size={20} />, title: "Top Contributor", desc: "Top 1% in Jan" },
             { icon: <Share2 className="text-blue-500" size={20} />, title: "Viral Post", desc: "Post reached 10k views" },
             { icon: <Edit2 className="text-green-500" size={20} />, title: "Writer", desc: "Published 10+ articles" },
         ]
-    };
+    } : null;
+
 
     const handleSaveProfile = (updatedData) => {
         updateUser(updatedData);
         setIsEditModalOpen(false);
     };
+
+    const handleFollowToggle = () => {
+        if (!user) {
+            openLoginModal();
+            return;
+        }
+        if (!displayUser) return;
+        toggleFollow(displayUser.handle);
+        setIsFollowing(!isFollowing);
+    };
+
+    // Update local state when user or displayUser changes
+    useEffect(() => {
+        if (user && displayUser) {
+            setIsFollowing(user.following?.includes(displayUser.handle));
+        }
+    }, [user, displayUser]);
 
     const [activeTab, setActiveTab] = React.useState('posts');
 
@@ -53,15 +123,29 @@ function Profile() {
         comments: 20 + i
     }));
 
-    const navigate = useNavigate();
+
 
     useEffect(() => {
-        if (!user) {
+        // Only redirect if visiting /profile (own profile) and not logged in
+        if (!user && !username) {
             navigate("/feed");
         }
-    }, [user, navigate]);
+    }, [user, username, navigate]);
 
-    if (!user) return null;
+    if (!displayUser && username) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-zinc-400">
+                <div className="text-6xl mb-4">😕</div>
+                <h2 className="text-2xl font-bold text-white mb-2">User not found</h2>
+                <p>The user <span className="text-blue-400">@{username}</span> does not exist.</p>
+                <button onClick={() => navigate('/feed')} className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition">
+                    Go Home
+                </button>
+            </div>
+        );
+    }
+
+    if (!profileData) return null; // Loading or just fallback
 
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-8 pt-6">
@@ -70,6 +154,12 @@ function Profile() {
                 onClose={() => setIsEditModalOpen(false)}
                 initialData={profileData}
                 onSave={handleSaveProfile}
+            />
+            <UserListModal
+                isOpen={isUserListModalOpen}
+                onClose={() => setIsUserListModalOpen(false)}
+                title={userListTitle}
+                users={userListUsers}
             />
             {/* Cover Image */}
             <div className="h-48 rounded-xl bg-gradient-to-r from-zinc-800 to-zinc-900 mb-8 overflow-hidden relative group">
@@ -102,19 +192,70 @@ function Profile() {
                                     <p className="text-zinc-500 text-sm mb-3 md:mb-4">{profileData.handle}</p>
 
                                     <div className="flex gap-4 md:gap-6 text-sm">
-                                        <div className="text-zinc-300"><span className="font-bold text-white">{profileData.stats.posts}</span> posts</div>
-                                        <div className="text-zinc-300"><span className="font-bold text-white">{profileData.stats.followers}</span> followers</div>
-                                        <div className="text-zinc-300"><span className="font-bold text-white">{profileData.stats.following}</span> following</div>
+                                        <div className="text-zinc-300">
+                                            <span className="font-bold text-white">{profileData.stats.posts}</span> posts
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setUserListTitle("Followers");
+                                                // Function to get mock followers
+                                                const followers = mockUsers.filter((_, i) => i % 2 === 0); // Mock data: assume half of users follow
+                                                setUserListUsers(followers);
+                                                setIsUserListModalOpen(true);
+                                            }}
+                                            className="text-zinc-300 hover:text-white transition cursor-pointer"
+                                        >
+                                            <span className="font-bold text-white">
+                                                {/* Optimistic update for followers count */}
+                                                {profileData.stats.followers + (isFollowing ? 1 : 0)}
+                                            </span> followers
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                setUserListTitle("Following");
+                                                let followingUsers = [];
+                                                if (isOwnProfile && user?.following) {
+                                                    followingUsers = mockUsers.filter(u => user.following.includes(u.handle));
+                                                } else {
+                                                    // Mock following for others
+                                                    followingUsers = mockUsers.filter((_, i) => i % 3 === 0);
+                                                }
+                                                setUserListUsers(followingUsers);
+                                                setIsUserListModalOpen(true);
+                                            }}
+                                            className="text-zinc-300 hover:text-white transition cursor-pointer"
+                                        >
+                                            <span className="font-bold text-white">
+                                                {/* Show actual following count for own profile, otherwise mocked */}
+                                                {isOwnProfile ? (user?.following?.length || 0) : profileData.stats.following}
+                                            </span> following
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => setIsEditModalOpen(true)}
-                                className="w-full md:w-auto px-4 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-zinc-200 transition mt-4 md:mt-0"
-                            >
-                                Edit profile
-                            </button>
+                            {isOwnProfile && (
+                                <button
+                                    onClick={() => setIsEditModalOpen(true)}
+                                    className="w-full md:w-auto px-4 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-zinc-200 transition mt-4 md:mt-0"
+                                >
+                                    Edit profile
+                                </button>
+                            )}
+
+                            {!isOwnProfile && (
+                                <button
+                                    onClick={handleFollowToggle}
+                                    className={`w-full md:w-auto px-6 py-2 text-sm font-medium rounded-md transition mt-4 md:mt-0 ${isFollowing
+                                        ? "bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700"
+                                        : "bg-white text-black hover:bg-zinc-200"
+                                        }`}
+                                >
+                                    {isFollowing ? "Unfollow" : "Follow"}
+                                </button>
+                            )}
                         </div>
 
                         <div className="mt-8">
@@ -144,7 +285,7 @@ function Profile() {
 
                     {/* Content Tabs */}
                     <div className="border-t border-zinc-800">
-                        <div className="flex justify-center gap-12 text-xs font-medium tracking-wider uppercase text-zinc-500 mb-8">
+                        <div className="flex justify-center gap-6 md:gap-12 text-xs font-medium tracking-wider uppercase text-zinc-500 mb-8">
                             {['posts', 'saved', 'tagged'].map((tab) => (
                                 <div
                                     key={tab}
@@ -184,12 +325,20 @@ function Profile() {
                                 )}
                             </div>
                         ) : (
-                            <div className="py-20 text-center">
-                                <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-500">
-                                    <Tag size={24} />
-                                </div>
-                                <h3 className="text-white font-bold mb-2">No tagged posts</h3>
-                                <p className="text-zinc-500 text-sm">Posts you are tagged in will appear here</p>
+                            <div className="space-y-6">
+                                {taggedPosts.length > 0 ? (
+                                    taggedPosts.map(post => (
+                                        <PostCard key={post.id} {...post} />
+                                    ))
+                                ) : (
+                                    <div className="py-20 text-center">
+                                        <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-500">
+                                            <Tag size={24} />
+                                        </div>
+                                        <h3 className="text-white font-bold mb-2">No tagged posts</h3>
+                                        <p className="text-zinc-500 text-sm">Posts you are tagged in will appear here</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -254,17 +403,19 @@ function Profile() {
                             )}
                         </div>
 
-                        <button
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="mt-6 text-sm text-zinc-500 hover:text-zinc-300 transition flex items-center gap-2"
-                        >
-                            <Plus size={14} />
-                            Add link
-                        </button>
+                        {isOwnProfile && (
+                            <button
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="mt-6 text-sm text-zinc-500 hover:text-zinc-300 transition flex items-center gap-2"
+                            >
+                                <Plus size={14} />
+                                Add link
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 

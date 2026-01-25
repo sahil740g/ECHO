@@ -1,6 +1,6 @@
 import Navbar from "./components/navbar/navbar";
 import Sidebar from "./components/sidebar/sidebar";
-import { Navigate, Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route, useLocation } from "react-router-dom";
 import Feed from "./pages/feed";
 import Query from "./pages/query";
 import Trending from "./pages/trending";
@@ -13,6 +13,7 @@ import SplashScreen from "./components/splashscreen/splashscreen";
 import { useState } from "react";
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
 
   if (isLoading) {
     return <SplashScreen onFinish={() => setIsLoading(false)} />;
@@ -31,7 +32,9 @@ function App() {
             <Route path="/query" element={<Query />} />
             <Route path="/trending" element={<Trending />} />
             <Route path="/community" element={<Community />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/profile" element={<Profile key={location.pathname} />} />
+            <Route path="/profile/:username" element={<Profile key={location.pathname} />} />
             <Route path="/search" element={<SearchResults />} />
           </Routes>
         </main>

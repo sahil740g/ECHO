@@ -1,6 +1,6 @@
 import { ThumbsUp, ThumbsDown, MessageSquare, Code, Check, Bookmark, Share2 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { usePosts } from "../../context/postscontext";
 import { useComments } from "../../context/commentscontext";
 import { useAuth } from "../../context/authcontext";
@@ -73,17 +73,39 @@ function PostCard({
                     </button>
                 </div>
                 <div className="flex-1 flex flex-col min-h-[180px]">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 cursor-pointer group/user" onClick={(e) => {
+                        e.stopPropagation();
+                        // Remove @ and navigate
+                        const profilePath = handle.startsWith('@') ? handle.substring(1) : handle;
+                        navigate(`/profile/${profilePath}`);
+                    }}>
                         <img src={avatar || "https://i.pravatar.cc/100"}
-                            className="w-9 h-9 rounded-full border border-white/10" />
-                        <div className="text-xs text-zinc-400">
-                            <span className="text-white font-medium">{username}</span>
-                            <span className="ml-2">{handle}</span>
+                            className="w-9 h-9 rounded-full border border-white/10 group-hover/user:border-blue-500/50 transition" />
+                        <div className="text-xs text-zinc-400 group-hover/user:text-zinc-300 transition">
+                            <span className="text-white font-medium group-hover/user:text-blue-400 transition">{handle}</span>
                             <span className="ml-2">{time}</span>
                         </div>
                     </div>
                     <h2 className="text-lg font-semibold text-white leading-snug mb-1 break-all">{title}</h2>
-                    <p className="text-sm text-zinc-400 leading-relaxed mb-3 break-all">{description}</p>
+                    {/* Description with basic tag parsing */}
+                    <p className="text-sm text-zinc-400 leading-relaxed mb-3 break-all">
+                        {description.split(/(@[\w_]+)/g).map((part, i) => {
+                            if (part.startsWith('@')) {
+                                const handle = part;
+                                return (
+                                    <Link
+                                        key={i}
+                                        to={`/profile/${handle.substring(1)}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-blue-400 hover:underline"
+                                    >
+                                        {part}
+                                    </Link>
+                                );
+                            }
+                            return part;
+                        })}
+                    </p>
                     {tags && tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
                             {tags.map((tag, i) => (
