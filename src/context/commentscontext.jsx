@@ -44,7 +44,7 @@ export function CommentsProvider({ children }) {
       ]
     }
   });
-  const addComment = (postId, text, codeSnippet = null) => {
+  const addComment = (postId, text, codeSnippet = null, language = null) => {
     setPosts(prev => {
       const existingPost = prev[postId] || { id: postId, comments: [] };
       return {
@@ -57,6 +57,7 @@ export function CommentsProvider({ children }) {
               id: Date.now(),
               text,
               codeSnippet,
+              language,
               user: "Guest",
               time: "just now",
               likes: 0,
@@ -136,7 +137,7 @@ export function CommentsProvider({ children }) {
     });
   };
 
-  const addReply = (postId, commentId, text, codeSnippet = null) => {
+  const addReply = (postId, commentId, text, codeSnippet = null, language = null) => {
     setPosts(prev => {
       const post = prev[postId];
       if (!post) return prev;
@@ -152,6 +153,7 @@ export function CommentsProvider({ children }) {
                   id: Date.now(),
                   text,
                   codeSnippet,
+                  language,
                   user: "Guest",
                   time: "just now",
                   likes: 0,

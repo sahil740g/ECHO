@@ -18,12 +18,15 @@ function PostCard({
     avatar,
 
     commentsCount: initialCommentsCount = 15, // Rename prop to avoid conflict/confusion
-    codeSnippet = null
+    codeSnippet = null,
+    language = "javascript",
+    image = null
 }) {
     const { votePost } = usePosts();
     const { getCommentCount } = useComments();
     const { user, toggleBookmark } = useAuth();
     const [showCode, setShowCode] = useState(false);
+    const [showImagePreview, setShowImagePreview] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const [isShared, setIsShared] = useState(false);
 
@@ -106,6 +109,34 @@ function PostCard({
                             return part;
                         })}
                     </p>
+                    {image && (
+                        <>
+                            <div
+                                className="mb-4 rounded-xl overflow-hidden border border-white/10 cursor-zoom-in"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowImagePreview(true);
+                                }}
+                            >
+                                <img src={image} alt="Post content" className="w-full object-cover max-h-[400px]" />
+                            </div>
+                            {showImagePreview && (
+                                <div
+                                    className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-200"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowImagePreview(false);
+                                    }}
+                                >
+                                    <img
+                                        src={image}
+                                        alt="Full preview"
+                                        className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain"
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
                     {tags && tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
                             {tags.map((tag, i) => (
@@ -137,11 +168,16 @@ function PostCard({
                     </div>
                     {showCode && codeSnippet && (
                         <div className="mt-4 mb-4 rounded-lg border border-white/10 overflow-hidden bg-[#0d1117]">
-                            <div className="flex justify-between items-center px-3 py-2 bg-[#161b22] text-xs text-zinc-400">
-                                <span>JavaScript</span>
+                            <div className="flex justify-between items-center px-4 py-2 bg-[#0d1117] border-b border-white/5">
+                                <div className="flex gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                                    <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                                    <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+                                </div>
+                                <span className="text-xs font-mono text-zinc-500 capitalized">{language}</span>
                                 <button onClick={handleCopy}
-                                    className="flex items-center gap-1 hover:text-white transition text-xs">
-                                    {isCopied ? <Check size={14} className="text-green-500" /> : null}
+                                    className="flex items-center gap-1.5 hover:text-white transition text-xs font-medium text-zinc-400">
+                                    {isCopied ? <Check size={14} className="text-green-500" /> : <div className="i-lucide-copy" />}
                                     {isCopied ? "Copied!" : "Copy"}
                                 </button>
                             </div>

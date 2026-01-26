@@ -6,6 +6,7 @@ import { mockUsers } from "../../data/mockUsers";
 function CommentComposer({ postId, isQuery = false }) {
     const [text, setText] = useState("");
     const [codeSnippet, setCodeSnippet] = useState("");
+    const [language, setLanguage] = useState("javascript");
     const [showCodeInput, setShowCodeInput] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -41,9 +42,10 @@ function CommentComposer({ postId, isQuery = false }) {
         e.preventDefault();
         if (!text.trim()) return;
 
-        addComment(postId, text, showCodeInput ? codeSnippet : null);
+        addComment(postId, text, showCodeInput ? codeSnippet : null, showCodeInput ? language : null);
         setText("");
         setCodeSnippet("");
+        setLanguage("javascript");
         setShowCodeInput(false);
         setShowSuggestions(false);
     };
@@ -84,7 +86,22 @@ function CommentComposer({ postId, isQuery = false }) {
                     {showCodeInput && isQuery && (
                         <div className="border-t border-white/10 p-2">
                             <div className="flex justify-between items-center mb-1 px-2">
-                                <label className="block text-xs font-medium text-zinc-400">Code Snippet</label>
+                                <div className="flex items-center gap-2">
+                                    <label className="block text-xs font-medium text-zinc-400">Code Snippet</label>
+                                    <select
+                                        value={language}
+                                        onChange={(e) => setLanguage(e.target.value)}
+                                        className="bg-[#161b22] text-xs text-blue-400 border border-white/10 rounded px-2 py-0.5 outline-none focus:border-blue-500"
+                                    >
+                                        <option value="javascript">JavaScript</option>
+                                        <option value="python">Python</option>
+                                        <option value="html">HTML</option>
+                                        <option value="css">CSS</option>
+                                        <option value="java">Java</option>
+                                        <option value="cpp">C++</option>
+                                        <option value="react">React</option>
+                                    </select>
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowCodeInput(false)}

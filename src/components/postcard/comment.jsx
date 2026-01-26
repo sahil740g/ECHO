@@ -104,10 +104,15 @@ function Comment({ comment, postId = "1" }) {
 
                         {showCode && (
                             <div className="rounded-lg border border-white/10 overflow-hidden bg-[#0d1117] max-w-2xl">
-                                <div className="flex justify-between items-center px-3 py-1 bg-[#161b22] text-[10px] text-zinc-400">
-                                    <span>Code Snippet</span>
+                                <div className="flex justify-between items-center px-3 py-2 bg-[#0d1117] border-b border-white/5">
+                                    <div className="flex gap-1.5">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50" />
+                                    </div>
+                                    <span className="text-[10px] font-mono text-zinc-500 ml-2 mr-auto">{comment.language || 'javascript'}</span>
                                     <button onClick={handleCopy}
-                                        className="flex items-center gap-1 hover:text-white transition">
+                                        className="flex items-center gap-1 hover:text-white transition text-[10px] text-zinc-500 font-medium">
                                         {isCopied ? <Check size={10} className="text-green-500" /> : null}
                                         {isCopied ? "Copied!" : "Copy"}
                                     </button>
