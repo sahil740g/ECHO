@@ -179,7 +179,13 @@ function Profile() {
                             <div className="flex gap-4 md:gap-6 items-start w-full md:w-auto">
                                 <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-full bg-zinc-800 overflow-hidden relative group">
                                     {profileData.avatar ? (
-                                        <img src={profileData.avatar} alt={profileData.name} className="w-full h-full object-cover" />
+                                        <div className="w-full h-full overflow-hidden">
+                                            <img
+                                                src={profileData.avatar}
+                                                alt={profileData.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-3xl font-bold text-white">
                                             {profileData.name[0]}

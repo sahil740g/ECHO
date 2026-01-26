@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Send, Code } from "lucide-react";
+import { Send, Code, Smile } from "lucide-react";
+import EmojiPicker from 'emoji-picker-react';
 import { useComments } from "../../context/commentscontext";
 import { mockUsers } from "../../data/mockUsers";
 
@@ -10,7 +11,12 @@ function CommentComposer({ postId, isQuery = false }) {
     const [showCodeInput, setShowCodeInput] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const { addComment } = useComments();
+
+    const onEmojiClick = (emojiObject) => {
+        setText(prev => prev + emojiObject.emoji);
+    };
 
     const handleTextChange = (e) => {
         const val = e.target.value;
@@ -48,6 +54,7 @@ function CommentComposer({ postId, isQuery = false }) {
         setLanguage("javascript");
         setShowCodeInput(false);
         setShowSuggestions(false);
+        setShowEmojiPicker(false);
     };
 
     return (
@@ -73,6 +80,34 @@ function CommentComposer({ postId, isQuery = false }) {
                             </div>
                         ))}
                     </div>
+                )}
+                {showEmojiPicker && (
+                    <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                        <div
+                            className="absolute bottom-full left-0 mb-2 z-50 shadow-2xl rounded-xl overflow-hidden border border-white/10 w-[85vw] max-w-[300px] [&_::-webkit-scrollbar]:hidden"
+                            style={{
+                                '--epr-bg-color': '#161b22',
+                                '--epr-category-label-bg-color': '#161b22',
+                                '--epr-text-color': '#ffffff',
+                                '--epr-search-input-bg-color': '#0d1117',
+                                '--epr-search-border-color': 'rgba(255,255,255,0.1)',
+                                '--epr-picker-border-color': 'transparent',
+                                '--epr-hover-bg-color': 'rgba(255,255,255,0.1)',
+                            }}
+                        >
+                            <EmojiPicker
+                                theme="dark"
+                                onEmojiClick={onEmojiClick}
+                                lazyLoadEmojis={true}
+                                width="100%"
+                                height={350}
+                                previewConfig={{ showPreview: false }}
+                                searchDisabled={false}
+                                skinTonesDisabled
+                            />
+                        </div>
+                    </>
                 )}
                 <div className="bg-[#161b22] border border-white/10 rounded-xl overflow-hidden transition focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50">
                     <input
@@ -121,18 +156,35 @@ function CommentComposer({ postId, isQuery = false }) {
                     )}
 
                     <div className="flex justify-between items-center px-2 pb-2 mt-1">
-                        {isQuery ? (
-                            <button
-                                type="button"
-                                onClick={() => setShowCodeInput(!showCodeInput)}
-                                className={`p-2 rounded-lg transition ${showCodeInput ? "text-blue-400 bg-blue-500/10" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
-                                title="Insert Code"
-                            >
-                                <Code size={18} />
-                            </button>
-                        ) : (
-                            <div className="w-9"></div> // Spacer to keep layout if needed, or just null
-                        )}
+                        <div className="flex gap-2">
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                    className={`p-2 rounded-lg transition ${showEmojiPicker ? 'text-yellow-400' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    <Smile size={18} />
+                                </button>
+                            </div>
+
+                            {/* Spacer or Code Button */}
+                            {isQuery && (
+                                <div className="border-l border-white/10 pl-2">
+                                    {/* This divider helps separate emoji from code actions visually */}
+                                </div>
+                            )}
+
+                            {isQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCodeInput(!showCodeInput)}
+                                    className={`p-2 rounded-lg transition ${showCodeInput ? "text-blue-400 bg-blue-500/10" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
+                                    title="Insert Code"
+                                >
+                                    <Code size={18} />
+                                </button>
+                            )}
+                        </div>
 
                         <button
                             type="submit"
