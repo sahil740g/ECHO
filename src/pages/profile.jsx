@@ -372,25 +372,25 @@ function Profile() {
 
                         <div className="space-y-4">
                             {profileData.socials.x && (
-                                <a href={profileData.socials.x} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                <a href={profileData.socials.x} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
                                     <X size={16} />
                                     X
                                 </a>
                             )}
                             {profileData.socials.github && (
-                                <a href={profileData.socials.github} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                <a href={profileData.socials.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
                                     <Github size={16} />
                                     GitHub
                                 </a>
                             )}
                             {profileData.socials.linkedin && (
-                                <a href={profileData.socials.linkedin} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                <a href={profileData.socials.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
                                     <Linkedin size={16} />
                                     LinkedIn
                                 </a>
                             )}
                             {profileData.socials.instagram && (
-                                <a href={profileData.socials.instagram} className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
+                                <a href={profileData.socials.instagram} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-zinc-400 hover:text-white transition text-sm">
                                     <Instagram size={16} />
                                     Instagram
                                 </a>

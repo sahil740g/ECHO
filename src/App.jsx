@@ -32,7 +32,6 @@ function App() {
             <Route path="/query" element={<Query />} />
             <Route path="/trending" element={<Trending />} />
             <Route path="/community" element={<Community />} />
-            <Route path="/community" element={<Community />} />
             <Route path="/profile" element={<Profile key={location.pathname} />} />
             <Route path="/profile/:username" element={<Profile key={location.pathname} />} />
             <Route path="/search" element={<SearchResults />} />
