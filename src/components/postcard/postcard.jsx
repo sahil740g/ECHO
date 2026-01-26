@@ -140,8 +140,12 @@ function PostCard({
                     {tags && tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
                             {tags.map((tag, i) => (
-                                <span key={i}
-                                    className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium tracking-wide">#{tag}</span>
+                                <button key={i}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/trending?tag=${encodeURIComponent(tag)}`);
+                                    }}
+                                    className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium tracking-wide hover:bg-blue-500/20 transition cursor-pointer">#{tag}</button>
                             ))}
                         </div>
                     )}

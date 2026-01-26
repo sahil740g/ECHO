@@ -1,8 +1,8 @@
 # ECHO - Frontend Product Requirements Document (PRD)
 
-**Version:** 1.1
+**Version:** 1.2
 **Date:** 2026-01-26
-**Status:** In Development (Frontend Prototype Complete)
+**Status:** In Development (Mobile Optimization Phase)
 
 ---
 
@@ -22,6 +22,7 @@
 - **Icons**: Lucide React
 - **Libraries**:
     - `emoji-picker-react`: For emoji selection in chat and posts.
+    - `react-easy-crop`: For profile image customization (Avatar & Banner).
 - **Routing**: React Router DOM v6
 - **State Management**: React Context API (`AuthContext`, `PostsContext`, `CommentsContext`)
 - **Build Tool**: Vite
@@ -47,6 +48,12 @@ The central hub for content discovery.
   - "Trending Languages" sidebar widget (Desktop).
   - "Community Stats" widget (Desktop).
 - **Responsive Design**: Sidebar hides on mobile; widgets move/adapt.
+
+### 3.2.1 Query Section (`/query`)
+Dedicated space for technical questions.
+- **Layout**: Follows the standard **2/3 Main Content + 1/3 Sidebar** layout (consistent with Feed).
+- **Header**: "Community Queries" title for clear context.
+- **Components**: Reuses `PostCard` logic but filters for 'query' type.
 
 ### 3.3 Trending & Discovery (`/trending`)
 Analytics-driven discovery engine.
@@ -76,7 +83,10 @@ Comprehensive identity management.
   - **Saved**: Bookmarked posts.
   - **Tagged**: Posts where user is mentioned.
 - **Social Integration**: Links to GitHub, LinkedIn, X, etc., open in **new tabs** (`target="_blank"`).
-- **Edit Profile**: Modal to update bio, name, and details.
+
+- **Edit Profile**: 
+  - **Image Cropping**: Advanced pan/zoom cropping for both avatars and banners.
+  - **Mobile Optimized**: Compact bottom-sheet style modal on mobile for better reachability.
 
 ### 3.6 Navigation Structure
 - **Desktop**: Persistent Left Sidebar (Navigation) + Right Sidebar (Widgets).
@@ -94,7 +104,7 @@ Comprehensive identity management.
 - **New Post / New Query Modal**:
     - Title, Body, Tagging system.
     - **Code Snippet** support with syntax highlighting.
-    - **Emoji Picker** integration.
+    - **Emoji Picker** integration (Dark themed, responsive width, hidden scrollbar).
     - Integrated with Mobile "+" button for separate work streams.
 
 ### 4.2 Code Solutions
