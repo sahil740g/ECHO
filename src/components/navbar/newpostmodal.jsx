@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Image, Code } from "lucide-react";
+import { X, Image, Code, Smile } from "lucide-react";
 import { usePosts } from "../../context/postscontext";
 import { mockUsers } from "../../data/mockUsers";
+import EmojiPicker from 'emoji-picker-react';
 
 const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const [title, setTitle] = useState("");
@@ -10,6 +11,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const [tags, setTags] = useState("");
     const [codeSnippet, setCodeSnippet] = useState("");
     const [showCodeInput, setShowCodeInput] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
     // Tagging state
     const [suggestions, setSuggestions] = useState([]);
@@ -44,6 +46,10 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         setShowSuggestions(false);
     };
 
+    const onEmojiClick = (emojiObject) => {
+        setDescription(prev => prev + emojiObject.emoji);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -63,6 +69,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         setTags("");
         setCodeSnippet("");
         setShowCodeInput(false);
+        setShowEmojiPicker(false);
         setSuggestions([]);
         setShowSuggestions(false);
         onClose();
@@ -170,8 +177,30 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-4">
+                    <div className="flex items-center justify-between pt-4 relative">
+                        {showEmojiPicker && (
+                            <>
+                                <div className="fixed inset-0 z-30" onClick={() => setShowEmojiPicker(false)} />
+                                <div className="absolute bottom-full left-0 mb-2 z-40 shadow-2xl rounded-xl overflow-hidden border border-white/10 max-w-[85vw] md:max-w-none">
+                                    <EmojiPicker
+                                        theme="dark"
+                                        onEmojiClick={onEmojiClick}
+                                        lazyLoadEmojis={true}
+                                        width="100%"
+                                        height={350}
+                                        previewConfig={{ showPreview: false }}
+                                    />
+                                </div>
+                            </>
+                        )}
                         <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                className={`p-2 rounded-lg transition ${showEmojiPicker ? 'text-yellow-400' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                            >
+                                <Smile size={20} />
+                            </button>
                             <button type="button" className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition">
                                 <Image size={20} />
                             </button>

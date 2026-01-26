@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Send } from "lucide-react";
+import { Send, Code } from "lucide-react";
 import { useComments } from "../../context/commentscontext";
 import { mockUsers } from "../../data/mockUsers";
 
-function CommentComposer({ postId }) {
+function CommentComposer({ postId, isQuery = false }) {
     const [text, setText] = useState("");
+    const [codeSnippet, setCodeSnippet] = useState("");
+    const [showCodeInput, setShowCodeInput] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const { addComment } = useComments();
@@ -33,20 +35,21 @@ function CommentComposer({ postId }) {
         const newText = [...words, handle].join(' ') + ' ';
         setText(newText);
         setShowSuggestions(false);
-        // Focus input logic could be added here if ref was used
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!text.trim()) return;
 
-        addComment(postId, text);
+        addComment(postId, text, showCodeInput ? codeSnippet : null);
         setText("");
+        setCodeSnippet("");
+        setShowCodeInput(false);
         setShowSuggestions(false);
     };
 
     return (
-        <form onSubmit={handleSubmit} className="mb-6 flex gap-3 relative">
+        <form onSubmit={handleSubmit} className="mb-6 flex flex-col gap-3 relative">
             <div className="flex-1 relative">
                 {showSuggestions && (
                     <div className="absolute bottom-full left-0 mb-2 w-[200px] md:w-64 bg-[#161b22] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
@@ -69,20 +72,60 @@ function CommentComposer({ postId }) {
                         ))}
                     </div>
                 )}
-                <input
-                    type="text"
-                    value={text}
-                    onChange={handleTextChange}
-                    placeholder="Write a comment..."
-                    className="w-full bg-[#161b22] border border-white/10 rounded-xl py-3 px-4 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition"
-                />
-                <button
-                    type="submit"
-                    disabled={!text.trim()}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-zinc-400 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                    <Send size={18} />
-                </button>
+                <div className="bg-[#161b22] border border-white/10 rounded-xl overflow-hidden transition focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50">
+                    <input
+                        type="text"
+                        value={text}
+                        onChange={handleTextChange}
+                        placeholder={isQuery ? "Write a solution or comment..." : "Write a comment..."}
+                        className="w-full bg-transparent border-none py-3 px-4 text-white placeholder-zinc-500 focus:outline-none"
+                    />
+
+                    {showCodeInput && isQuery && (
+                        <div className="border-t border-white/10 p-2">
+                            <div className="flex justify-between items-center mb-1 px-2">
+                                <label className="block text-xs font-medium text-zinc-400">Code Snippet</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCodeInput(false)}
+                                    className="text-xs text-red-400 hover:text-red-300"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                            <textarea
+                                value={codeSnippet}
+                                onChange={(e) => setCodeSnippet(e.target.value)}
+                                placeholder="// Paste your solution code here..."
+                                rows={3}
+                                className="w-full bg-[#0d1117] border border-white/10 rounded-lg px-3 py-2 text-green-400 font-mono text-xs placeholder-zinc-600 focus:outline-none focus:border-blue-500/50 resize-none"
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex justify-between items-center px-2 pb-2 mt-1">
+                        {isQuery ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowCodeInput(!showCodeInput)}
+                                className={`p-2 rounded-lg transition ${showCodeInput ? "text-blue-400 bg-blue-500/10" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
+                                title="Insert Code"
+                            >
+                                <Code size={18} />
+                            </button>
+                        ) : (
+                            <div className="w-9"></div> // Spacer to keep layout if needed, or just null
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={!text.trim()}
+                            className="p-2 text-zinc-400 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            <Send size={18} />
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
     );

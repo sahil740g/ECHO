@@ -1,4 +1,4 @@
-import { ThumbsUp, ThumbsDown, MessageSquare, Send } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Send, Code, Check } from "lucide-react";
 import CommentList from "./commentlist";
 import { useComments } from "../../context/commentscontext";
 import { useState } from "react";
@@ -11,6 +11,18 @@ function Comment({ comment, postId = "1" }) {
     const [replyText, setReplyText] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [showCode, setShowCode] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(comment.codeSnippet);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy!", err);
+        }
+    };
 
     const handleTextChange = (e) => {
         const val = e.target.value;
@@ -80,6 +92,33 @@ function Comment({ comment, postId = "1" }) {
                         return part;
                     })}
                 </p>
+
+                {comment.codeSnippet && (
+                    <div className="mb-2">
+                        <button
+                            onClick={() => setShowCode(!showCode)}
+                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mb-2"
+                        >
+                            <Code size={12} />{showCode ? "Hide Code" : "View Code"}
+                        </button>
+
+                        {showCode && (
+                            <div className="rounded-lg border border-white/10 overflow-hidden bg-[#0d1117] max-w-2xl">
+                                <div className="flex justify-between items-center px-3 py-1 bg-[#161b22] text-[10px] text-zinc-400">
+                                    <span>Code Snippet</span>
+                                    <button onClick={handleCopy}
+                                        className="flex items-center gap-1 hover:text-white transition">
+                                        {isCopied ? <Check size={10} className="text-green-500" /> : null}
+                                        {isCopied ? "Copied!" : "Copy"}
+                                    </button>
+                                </div>
+                                <pre className="p-3 text-xs overflow-x-auto">
+                                    <code className="text-green-400 whitespace-pre">{comment.codeSnippet}</code>
+                                </pre>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div className="flex items-center gap-4 text-xs text-zinc-500">
                     <button

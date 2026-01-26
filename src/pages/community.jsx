@@ -2,10 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Hash, Users, MoreVertical, Smile } from "lucide-react";
 import { useAuth } from "../context/authcontext";
 
+import EmojiPicker from 'emoji-picker-react';
+
 export default function Community() {
     const { user } = useAuth();
     const [message, setMessage] = useState("");
     const messagesEndRef = useRef(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
     // Mock Messages Data
     const [messages, setMessages] = useState([
@@ -23,8 +26,14 @@ export default function Community() {
         scrollToBottom();
     }, [messages]);
 
+    const onEmojiClick = (emojiObject) => {
+        setMessage(prev => prev + emojiObject.emoji);
+        // setShowEmojiPicker(false); // Optional: keep open for multiple emojis
+    };
+
     const handleSendMessage = (e) => {
         e.preventDefault();
+        setShowEmojiPicker(false);
         if (!message.trim()) return;
 
         const newMessage = {
@@ -133,7 +142,22 @@ export default function Community() {
                 </div>
 
                 {/* INPUT AREA */}
-                <div className="p-4 px-4 md:px-6 bg-[#0d1117]">
+                <div className="p-4 px-4 md:px-6 bg-[#0d1117] relative">
+                    {showEmojiPicker && (
+                        <>
+                            <div className="fixed inset-0 z-30" onClick={() => setShowEmojiPicker(false)} />
+                            <div className="absolute bottom-20 right-0 md:right-6 z-40 shadow-2xl rounded-xl overflow-hidden border border-white/10 max-w-[90vw]">
+                                <EmojiPicker
+                                    theme="dark"
+                                    onEmojiClick={onEmojiClick}
+                                    lazyLoadEmojis={true}
+                                    width="100%"
+                                    height={400}
+                                    previewConfig={{ showPreview: false }}
+                                />
+                            </div>
+                        </>
+                    )}
                     <div className="relative bg-[#161b22] rounded-xl flex items-center p-2 border border-white/10 focus-within:border-zinc-500 transition">
                         <button type="button" className="p-2 text-zinc-400 hover:text-white transition rounded-full hover:bg-white/5">
                             <MoreVertical size={20} />
@@ -148,7 +172,11 @@ export default function Community() {
                             />
                         </form>
                         <div className="flex items-center gap-1 pr-1">
-                            <button type="button" className="p-2 text-zinc-400 hover:text-white transition rounded-full hover:bg-white/5">
+                            <button
+                                type="button"
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                className={`p-2 transition rounded-full hover:bg-white/5 ${showEmojiPicker ? 'text-yellow-400' : 'text-zinc-400 hover:text-white'}`}
+                            >
                                 <Smile size={20} />
                             </button>
                             {message.trim() && (

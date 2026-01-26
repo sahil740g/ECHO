@@ -1,7 +1,7 @@
-import {createContext,useContext,useState} from "react";
-const CommentsContext=createContext();
-export function CommentsProvider({children}){
-  const [posts, setPosts]=useState({
+import { createContext, useContext, useState } from "react";
+const CommentsContext = createContext();
+export function CommentsProvider({ children }) {
+  const [posts, setPosts] = useState({
     1: {
       id: "1",
       comments: [
@@ -44,7 +44,7 @@ export function CommentsProvider({children}){
       ]
     }
   });
-  const addComment = (postId, text) => {
+  const addComment = (postId, text, codeSnippet = null) => {
     setPosts(prev => {
       const existingPost = prev[postId] || { id: postId, comments: [] };
       return {
@@ -56,6 +56,7 @@ export function CommentsProvider({children}){
             {
               id: Date.now(),
               text,
+              codeSnippet,
               user: "Guest",
               time: "just now",
               likes: 0,
@@ -135,7 +136,7 @@ export function CommentsProvider({children}){
     });
   };
 
-  const addReply = (postId, commentId, text) => {
+  const addReply = (postId, commentId, text, codeSnippet = null) => {
     setPosts(prev => {
       const post = prev[postId];
       if (!post) return prev;
@@ -150,6 +151,7 @@ export function CommentsProvider({children}){
                 {
                   id: Date.now(),
                   text,
+                  codeSnippet,
                   user: "Guest",
                   time: "just now",
                   likes: 0,
