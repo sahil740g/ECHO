@@ -50,29 +50,37 @@ const About = () => {
                                 name: "Mohammed Sahil",
                                 role: "Frontend Lead",
                                 desc: "Passionate about building intuitive, responsive user experiences. Previously at TechFlow, Sahil specializes in React performance optimization and accessible design systems. He believes the best UI is the one you don't even notice.",
-                                github: "#",
-                                linkedin: "#"
+                                github: "https://github.com/sahil740g",
+                                githubUser: "sahil740g",
+                                linkedin: "https://www.linkedin.com/in/mohammed-sahil-49399731b",
+                                linkedinUser: "Mohammed Sahil"
                             },
                             {
                                 name: "Dishant Savadia",
                                 role: "Backend Architect",
                                 desc: "Expert in distributed systems and scalable infrastructure. Dishant spent 5 years contributing to major open-source databases before joining ECHO. He loves Rust, Go, and solving complex concurrency problems.",
-                                github: "#",
-                                linkedin: "#"
+                                github: "https://github.com/dishant11max",
+                                githubUser: "dishant11max",
+                                linkedin: "https://www.linkedin.com/in/dishant-savadia-b38b0a289/",
+                                linkedinUser: "Dishant Savadia"
                             },
                             {
                                 name: "Sk Tahsin Ali",
                                 role: "Product Designer",
                                 desc: "Crafting distinct visual identities and seamless workflows. Tahsin bridges the gap between engineering and art, ensuring that every pixel serves a purpose. He is a minimalist at heart and a typography nerd.",
                                 github: "#",
-                                linkedin: "#"
+                                githubUser: "tahsinali",
+                                linkedin: "#",
+                                linkedinUser: "Sk Tahsin Ali"
                             },
                             {
                                 name: "Swatipayal Mohanty",
                                 role: "Community Lead",
                                 desc: "Building bridges between ECHO and the global developer ecosystem. Swatipayal organizes our hackathons, manages the mentorship program, and ensures that every voice in the community is heard and valued.",
                                 github: "#",
-                                linkedin: "#"
+                                githubUser: "swatipayal",
+                                linkedin: "#",
+                                linkedinUser: "Swatipayal Mohanty"
                             }
                         ].map((dev, i) => (
                             <div key={i} className="flex items-start gap-4 p-4 bg-[#161b22] border border-white/5 rounded-xl hover:border-white/10 transition-colors">
@@ -81,13 +89,15 @@ const About = () => {
                                         <h3 className="text-white font-medium">{dev.name}</h3>
                                         <span className="text-blue-400 text-xs font-medium">{dev.role}</span>
                                     </div>
-                                    <p className="text-zinc-400 text-sm leading-relaxed mb-3">{dev.desc}</p>
-                                    <div className="flex gap-3">
-                                        <a href={dev.github} target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors">
-                                            <Github size={16} />
+                                    <p className="text-zinc-400 text-sm leading-relaxed mb-4">{dev.desc}</p>
+                                    <div className="flex flex-wrap gap-4">
+                                        <a href={dev.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-xs group">
+                                            <Github size={14} className="group-hover:scale-110 transition-transform" />
+                                            <span>{dev.githubUser}</span>
                                         </a>
-                                        <a href={dev.linkedin} target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-blue-400 transition-colors">
-                                            <Linkedin size={16} />
+                                        <a href={dev.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-zinc-500 hover:text-blue-400 transition-colors text-xs group">
+                                            <Linkedin size={14} className="group-hover:scale-110 transition-transform" />
+                                            <span>{dev.linkedinUser}</span>
                                         </a>
                                     </div>
                                 </div>
