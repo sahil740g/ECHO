@@ -15,6 +15,11 @@ import { NotificationProvider } from "./context/NotificationContext";
 
 import Chat from "./pages/chat";
 import Notifications from "./pages/notifications";
+import Guidelines from "./pages/guidelines";
+import HelpCenter from "./pages/helpcenter";
+import Blog from "./pages/blog";
+import BlogPost from "./pages/blogpost";
+import About from "./pages/about";
 import { useState } from "react";
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +49,11 @@ function App() {
               <Route path="/chat" element={<Chat />} />
               <Route path="/chat/:chatId" element={<Chat />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/guidelines" element={<Guidelines />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogPost />} />
+              <Route path="/about" element={<About />} />
             </Routes>
           </main>
         </div>
