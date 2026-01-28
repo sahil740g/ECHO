@@ -51,8 +51,9 @@ socket.onmessage = (event) => {
         const post = {
             id: Date.now(),
             votes: 0,
-            username: "Current User", // Hardcoded for now
-            handle: "@currentuser",
+            username: newPost.username || "Anonymous",
+            handle: newPost.handle || "@anonymous",
+            avatar: newPost.avatar, // Add avatar
             time: "Just now",
             commentsCount: 0,
             ...newPost,

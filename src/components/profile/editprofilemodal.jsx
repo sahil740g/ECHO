@@ -216,16 +216,16 @@ const EditProfileModal = ({ isOpen, onClose, initialData, onSave }) => {
                             />
                             <ZoomIn size={20} className="text-zinc-400" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3 md:flex md:justify-end">
+                        <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
                             <button
                                 onClick={handleCancelCrop}
-                                className="px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition font-medium text-center"
+                                className="order-2 sm:order-1 px-4 py-2.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition font-medium text-center"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSaveCrop}
-                                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition flex items-center justify-center gap-2 font-medium"
+                                className="order-1 sm:order-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition flex items-center justify-center gap-2 font-medium"
                             >
                                 <Check size={18} />
                                 Apply
@@ -420,17 +420,17 @@ const EditProfileModal = ({ isOpen, onClose, initialData, onSave }) => {
                     </form>
                 </div>
 
-                <div className="p-4 border-t border-zinc-800 grid grid-cols-2 gap-3 md:flex md:justify-end bg-zinc-900 flex-shrink-0 pb-8 md:pb-4">
+                <div className="p-4 border-t border-zinc-800 flex flex-col sm:flex-row sm:justify-end gap-3 bg-zinc-900 flex-shrink-0 pb-8 md:pb-4">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition text-center"
+                        className="order-2 sm:order-1 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition text-center"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition text-center"
+                        className="order-1 sm:order-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition text-center"
                     >
                         Save Profile
                     </button>

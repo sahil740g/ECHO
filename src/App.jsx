@@ -20,6 +20,7 @@ import HelpCenter from "./pages/helpcenter";
 import Blog from "./pages/blog";
 import BlogPost from "./pages/blogpost";
 import About from "./pages/about";
+import Settings from "./pages/settings";
 import { useState } from "react";
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +55,7 @@ function App() {
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/about" element={<About />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
         </div>

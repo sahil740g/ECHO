@@ -80,7 +80,11 @@ const NavbarActions = () => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className={`p-2 rounded-full hover:bg-white/10 cursor-pointer transition ${isDropdownOpen ? "text-white bg-white/10" : "text-zinc-400 hover:text-white"}`}
             >
-              <UserCircle size={40} className="hidden md:block" />
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover hidden md:block border border-white/10" />
+              ) : (
+                <UserCircle size={40} className="hidden md:block" />
+              )}
               <Settings size={24} className="block md:hidden" />
             </button>
 
@@ -99,10 +103,10 @@ const NavbarActions = () => {
 
                   </div>
                   <div className="p-2 border-t border-white/5">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-zinc-300 hover:bg-white/5 hover:text-white rounded-lg transition text-sm text-left">
+                    <Link to="/settings" className="w-full flex items-center gap-3 px-3 py-2 text-zinc-300 hover:bg-white/5 hover:text-white rounded-lg transition text-sm text-left">
                       <Settings size={18} />
                       Settings
-                    </button>
+                    </Link>
                     <button
                       onClick={logout}
                       className="w-full flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition text-sm text-left"

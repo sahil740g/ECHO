@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, Image, Code, Smile } from "lucide-react";
 import { usePosts } from "../../context/postscontext";
+import { useAuth } from "../../context/authcontext";
 import { mockUsers } from "../../data/mockUsers";
 import EmojiPicker from 'emoji-picker-react';
 
@@ -21,6 +22,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
 
     const { addPost } = usePosts();
+    const { user } = useAuth();
 
     if (!isOpen) return null;
 
@@ -74,7 +76,10 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
             codeSnippet: showCodeInput ? codeSnippet : null,
             language: showCodeInput ? language : null,
             image: image,
-            type: isQuery ? 'query' : 'post'
+            type: isQuery ? 'query' : 'post',
+            username: user ? user.name : "Anonymous",
+            handle: user ? user.handle : "@anonymous",
+            avatar: user ? user.avatar : null
         };
 
         addPost(newPost);
@@ -102,7 +107,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     return createPortal(
         <div className="fixed inset-0 z-[100] backdrop-blur-sm bg-black/70 overflow-y-auto">
             <div className="min-h-full flex items-center justify-center p-4">
-                <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-lg p-4 md:p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-4">
+                <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-lg p-5 md:p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200 my-auto">
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 text-zinc-400 hover:text-white transition"
@@ -269,7 +274,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                             </div>
                             <button
                                 type="submit"
-                                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition cursor-pointer"
+                                className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-lg font-medium transition cursor-pointer text-sm"
                             >
                                 {isQuery ? "Ask Query" : "Post"}
                             </button>

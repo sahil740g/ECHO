@@ -51,7 +51,7 @@ function Profile() {
 
     const savedPostsIds = displayUser?.savedPosts || [];
     const savedPosts = posts.filter(post => savedPostsIds.includes(post.id));
-
+    const userPosts = displayUser ? posts.filter(post => post.handle.toLowerCase() === displayUser.handle.toLowerCase()) : [];
 
     const taggedPosts = displayUser ? posts.filter(post => {
         const handle = displayUser.handle.toLowerCase();
@@ -333,11 +333,22 @@ function Profile() {
                         </div>
 
                         {/* Tab Content */}
+                        {/* Tab Content */}
                         {activeTab === 'posts' ? (
                             <div className="grid grid-cols-1 gap-6">
-                                {posts.map((post) => (
-                                    <PostCard key={post.id} {...post} />
-                                ))}
+                                {userPosts.length > 0 ? (
+                                    userPosts.map((post) => (
+                                        <PostCard key={post.id} {...post} />
+                                    ))
+                                ) : (
+                                    <div className="py-20 text-center">
+                                        <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-500">
+                                            <Edit2 size={24} />
+                                        </div>
+                                        <h3 className="text-white font-bold mb-2">No posts yet</h3>
+                                        <p className="text-zinc-500 text-sm">Posts created by {profileData.name} will appear here</p>
+                                    </div>
+                                )}
                             </div>
                         ) : activeTab === 'saved' ? (
                             <div className="space-y-6">
@@ -376,7 +387,7 @@ function Profile() {
                 </div>
 
                 {/* Right Sidebar - Minimalist */}
-                <div className="w-72 flex flex-col gap-10 pt-2">
+                <div className="w-full md:w-72 flex flex-col gap-10 pt-2">
                     {/* Achievements */}
                     <div>
                         <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-5">Achievements</h3>
