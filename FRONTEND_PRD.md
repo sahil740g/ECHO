@@ -75,7 +75,18 @@ Real-time messaging interface.
     - Full-screen chat interface.
     - Simplified layout (Active Users sidebar removed on all views for cleaner UX).
 
-### 3.5 User Profile (`/profile`)
+### 3.5 Personal Direct Messaging (`/chat`)
+Private Communication System.
+- **Features**:
+  - **Functionality**: Real-time messaging simulation (local state) with "Send on Enter" support.
+  - **Emoji Picker**: Integrated smile icon in input for easy emoji access.
+  - **Profile Integration**: "Message" button on user profiles (visible only if following the user) to initiate chats.
+  - **Routing Refactor**: Active chats use URL parameters (`/chat/:id`) for deep linking and navigation.
+- **Mobile Optimization**:
+  - **Smart Navigation**: Bottom Navigation Bar is visible on the Contact List view but **automatically hides** when inside a conversation to maximize vertical screen space.
+  - **Adaptive Padding**: App layout dynamically adjusts padding to prevent content overlap or cutoff.
+
+### 3.6 User Profile (`/profile`)
 Comprehensive identity management.
 - **Header**: Avatar, Bio, Location, Website, Stats (Followers/Following).
 - **Tabs**:
@@ -131,6 +142,7 @@ The application uses a **Context-based architecture** to simulate a backend:
 - **`PostsContext`**: Manages the master list of posts, CRUD operations, and trending logic.
 - **`AuthContext`**: Manages current user session, bookmarks, and following lists.
 - **`CommentsContext`**: Manages threads and replies for posts (supports code snippets).
+- **`ChatContext`**: Manages personal direct messages, active conversation routing, and mock chat data.
 
 *Note: Currently using mock data arrays. Ready for API integration.*
 

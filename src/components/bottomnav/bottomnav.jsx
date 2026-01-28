@@ -1,13 +1,20 @@
-import { Newspaper, MessageCircleQuestion, TrendingUp, Users, User, Plus } from "lucide-react";
+import { Newspaper, MessageCircleQuestion, TrendingUp, Users, User, Plus, MessageSquare } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import NewPostModal from "../navbar/newpostmodal";
 import AuthModal from "../navbar/authmodal";
 import { useAuth } from "../../context/authcontext";
+import { useLocation } from "react-router-dom";
 const BottomNav = () => {
     const [isNewPostModalOpen, setIsNewPostModalOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const { user } = useAuth();
+    const location = useLocation();
+
+    // Hide only if we are in a specific chat (e.g. /chat/123), but show for chat list (/chat)
+    // We check if it starts with /chat/ (with slash)
+    if (location.pathname.startsWith('/chat/')) return null;
+
     return (
         <>
             <button onClick={() => setIsNewPostModalOpen(true)} className="fixed bottom-20 right-4 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg md:hidden z-50 hover:bg-blue-600 transition cursor-pointer">
@@ -17,6 +24,7 @@ const BottomNav = () => {
                 <div className="flex justify-around items-center h-full px-2">
                     <BottomNavItem to="/feed" icon={Newspaper} label="Feed" />
                     <BottomNavItem to="/query" icon={MessageCircleQuestion} label="Query" />
+                    <BottomNavItem to="/chat" icon={MessageSquare} label="Chat" />
                     <BottomNavItem to="/trending" icon={TrendingUp} label="Trend" />
                     <BottomNavItem to="/community" icon={Users} label="Comm" />
                     {user ? (

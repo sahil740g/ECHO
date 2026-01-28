@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Edit2, Plus, Trophy, Share2, MapPin, Link as LinkIcon, Calendar, X, Github, Linkedin, Instagram, Tag, UserCircle } from "lucide-react";
+import { Edit2, Plus, Trophy, Share2, MapPin, Link as LinkIcon, Calendar, X, Github, Linkedin, Instagram, Tag, UserCircle, MessageSquare } from "lucide-react";
 import { useAuth } from "../context/authcontext";
+import { useChat } from "../context/ChatContext";
 
 import { usePosts } from "../context/postscontext";
 import { useComments } from "../context/commentscontext";
@@ -16,6 +17,7 @@ function Profile() {
     const { user, updateUser, toggleFollow, openLoginModal } = useAuth();
     const { posts } = usePosts();
     const { posts: commentsData } = useComments();
+    const { getOrCreateChat, selectChat } = useChat();
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
     // Initialize state properly inside useEffect or use derived state
     const [isFollowing, setIsFollowing] = React.useState(false);
@@ -104,6 +106,18 @@ function Profile() {
         if (!displayUser) return;
         toggleFollow(displayUser.handle);
         setIsFollowing(!isFollowing);
+    };
+
+    const handleMessage = () => {
+        if (!user) {
+            openLoginModal();
+            return;
+        }
+        if (!displayUser) return;
+
+        const chat = getOrCreateChat(displayUser.handle);
+        // selectChat(chat.id); // No longer needed as we navigate directly
+        navigate(`/chat/${chat.id}`);
     };
 
     // Update local state when user or displayUser changes
@@ -262,13 +276,24 @@ function Profile() {
                                     {isFollowing ? "Unfollow" : "Follow"}
                                 </button>
                             )}
+                            {/* Message Button - Only defined if not own profile and following */}
+                            {!isOwnProfile && isFollowing && (
+                                <div className="md:ml-4 flex mt-4 md:mt-0 w-full md:w-auto">
+                                    <button
+                                        onClick={handleMessage}
+                                        className="w-full md:w-auto px-6 py-2 bg-white text-black text-sm font-medium rounded-md hover:bg-zinc-200 transition flex items-center justify-center gap-2"
+                                    >
+                                        <MessageSquare size={18} />
+                                        Message
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="mt-8">
                             <p className="text-zinc-300 leading-relaxed max-w-lg">
                                 {profileData.bio}
                             </p>
-
                             <div className="flex gap-6 mt-4 text-sm text-zinc-500">
                                 <div className="flex items-center gap-2">
                                     <MapPin size={14} />

@@ -1,4 +1,4 @@
-import { Newspaper, MessageCircleQuestion, TrendingUp, Users, BookOpen, ChevronDown, ChevronRight, FileText, HelpCircle, Shield, Info } from "lucide-react";
+import { Newspaper, MessageCircleQuestion, TrendingUp, Users, BookOpen, ChevronDown, ChevronRight, FileText, HelpCircle, Shield, Info, MessageSquare } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 
@@ -12,6 +12,7 @@ const Sidebar = () => {
                 <SidebarItem to="/query" icon={MessageCircleQuestion} text="Query" />
                 <SidebarItem to="/trending" icon={TrendingUp} text="Trending" />
                 <SidebarItem to="/community" icon={Users} text="Community" />
+                <SidebarItem to="/chat" icon={MessageSquare} text="Messages" />
                 <div className="h-px bg-gray-500 w-[90%] mx-auto my-2"></div>
 
                 <div>

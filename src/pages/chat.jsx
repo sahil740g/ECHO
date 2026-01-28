@@ -1,0 +1,214 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useChat } from '../context/ChatContext';
+import { useAuth } from '../context/authcontext';
+import { mockUsers } from '../data/mockUsers';
+import { Send, ArrowLeft, Search, MoreVertical, Smile } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
+import { useNavigate, useParams } from 'react-router-dom';
+
+const Chat = () => {
+    const { chats, sendMessage } = useChat();
+    const { user } = useAuth();
+    const { chatId } = useParams();
+    const [messageInput, setMessageInput] = useState('');
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const messagesEndRef = useRef(null);
+    const navigate = useNavigate();
+
+    const activeChatId = chatId;
+    const activeChat = chats.find(c => c.id === chatId);
+
+    const selectChat = (id) => {
+        if (id) {
+            navigate(`/chat/${id}`);
+        } else {
+            navigate('/chat');
+        }
+    };
+
+    // Helper to find the "other" participant in a chat
+    const getOtherParticipant = (participants) => {
+        const otherId = participants.find(id => id !== (user?.id || "curr_user"));
+        // Find user details from mockUsers. 
+        // Note: mockUsers handles are like "@dishantsav123", ids in mockChats are like "@dishantsav123"
+        return mockUsers.find(u => u.handle === otherId) || { name: otherId, handle: otherId, avatar: null };
+    };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [activeChat?.messages]);
+
+    const handleSend = (e) => {
+        e.preventDefault();
+        if (!messageInput.trim() || !activeChatId) return;
+        sendMessage(activeChatId, messageInput);
+        setMessageInput('');
+    };
+
+    const formatTime = (timestamp) => {
+        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const onEmojiClick = (emojiObject) => {
+        setMessageInput(prev => prev + emojiObject.emoji);
+        setShowEmojiPicker(false);
+    };
+
+    return (
+        <div className="flex h-[calc(100vh-4rem)] md:h-screen bg-black text-white overflow-hidden">
+            {/* Contact List - Hidden on mobile if chat is active */}
+            <div className={`w-full md:w-1/3 lg:w-1/4 border-r border-[#2F3336] flex flex-col ${activeChatId ? 'hidden md:flex' : 'flex'}`}>
+                <div className="p-4 border-b border-[#2F3336]">
+                    <h1 className="text-xl font-bold mb-4">Messages</h1>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-2.5 text-gray-500" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search Direct Messages"
+                            className="w-full bg-[#202327] rounded-full py-2 pl-10 pr-4 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                    {chats.map(chat => {
+                        const otherUser = getOtherParticipant(chat.participants);
+                        const lastMessage = chat.messages[chat.messages.length - 1];
+                        return (
+                            <div
+                                key={chat.id}
+                                onClick={() => selectChat(chat.id)}
+                                className={`flex items-center p-4 hover:bg-[#16181C] cursor-pointer transition-colors ${activeChatId === chat.id ? 'bg-[#16181C] border-r-2 border-blue-500' : ''}`}
+                            >
+                                <div className="w-10 h-10 rounded-full bg-gray-600 overflow-hidden shrink-0 mr-3">
+                                    {otherUser.avatar ? (
+                                        <img src={otherUser.avatar} alt={otherUser.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-lg font-bold bg-gradient-to-tr from-blue-500 to-purple-500">
+                                            {otherUser.name?.[0] || '?'}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-baseline">
+                                        <span className="font-bold truncate">{otherUser.name}</span>
+                                        <span className="text-xs text-gray-500">{lastMessage ? formatTime(lastMessage.timestamp) : ''}</span>
+                                    </div>
+                                    <p className="text-gray-500 text-sm truncate">
+                                        {lastMessage ? (
+                                            <>
+                                                {lastMessage.senderId === (user?.id || "curr_user") ? 'You: ' : ''}
+                                                {lastMessage.text}
+                                            </>
+                                        ) : 'Start a conversation'}
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Chat Window - Hidden on mobile if no chat is active */}
+            <div className={`w-full md:w-2/3 lg:w-3/4 flex flex-col ${!activeChatId ? 'hidden md:flex' : 'flex'}`}>
+                {activeChatId ? (
+                    <>
+                        <div className="px-4 py-3 border-b border-[#2F3336] flex items-center justify-between backdrop-blur-md bg-black/80 sticky top-0 z-10">
+                            <div className="flex items-center">
+                                <button onClick={() => selectChat(null)} className="md:hidden mr-3 text-white">
+                                    <ArrowLeft size={24} />
+                                </button>
+                                <div className="w-9 h-9 rounded-full bg-gray-600 overflow-hidden mr-3">
+                                    {getOtherParticipant(activeChat.participants).avatar ? (
+                                        <img src={getOtherParticipant(activeChat.participants).avatar} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center font-bold bg-gradient-to-tr from-blue-500 to-purple-500">
+                                            {getOtherParticipant(activeChat.participants).name?.[0] || '?'}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <h2 className="font-bold">{getOtherParticipant(activeChat.participants).name}</h2>
+                                    <p className="text-xs text-gray-500">{getOtherParticipant(activeChat.participants).handle}</p>
+                                </div>
+                            </div>
+                            <MoreVertical size={20} className="text-gray-400 cursor-pointer" />
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {activeChat.messages.map((msg, index) => {
+                                const isMe = msg.senderId === (user?.id || "curr_user");
+                                return (
+                                    <div key={msg.id || index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMe
+                                            ? 'bg-blue-500 text-white rounded-br-none'
+                                            : 'bg-[#2F3336] text-white rounded-bl-none'
+                                            }`}>
+                                            <p>{msg.text}</p>
+                                            <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-blue-100' : 'text-gray-400'}`}>
+                                                {formatTime(msg.timestamp)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <div className="p-4 border-t border-[#2F3336] bg-black">
+                            <form onSubmit={handleSend} className="flex items-center gap-2 bg-[#202327] rounded-full px-4 py-2 relative">
+                                {showEmojiPicker && (
+                                    <div className="absolute bottom-14 left-0 z-50">
+                                        <EmojiPicker theme="dark" onEmojiClick={onEmojiClick} />
+                                    </div>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                    className="text-blue-500 hover:bg-blue-500/10 p-2 rounded-full transition-colors"
+                                >
+                                    <Smile size={20} />
+                                </button>
+                                <input
+                                    type="text"
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleSend(e);
+                                        }
+                                    }}
+                                    placeholder="Start a new message"
+                                    className="flex-1 bg-transparent border-none focus:outline-none text-white placeholder-gray-500"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={!messageInput.trim()}
+                                    className="text-blue-500 disabled:text-gray-600 disabled:cursor-not-allowed hover:bg-blue-500/10 p-2 rounded-full transition-colors"
+                                >
+                                    <Send size={20} />
+                                </button>
+                            </form>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+                        <div className="w-16 h-16 rounded-full bg-[#16181C] flex items-center justify-center mb-4">
+                            <Send size={32} />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Select a message</h2>
+                        <p>Choose from your existing conversations, start a new one, or just get swiping.</p>
+                        <button className="mt-6 px-6 py-3 bg-blue-500 text-white font-bold rounded-full hover:bg-blue-600 transition-colors">
+                            New Message
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Chat;
