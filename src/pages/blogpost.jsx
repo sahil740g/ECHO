@@ -62,7 +62,7 @@ const BlogPost = () => {
                             <Clock size={14} /> {post.readTime}
                         </span>
                     </div>
-                    <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                    <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight">
                         {post.title}
                     </h1>
                     <div className="flex items-center gap-3">

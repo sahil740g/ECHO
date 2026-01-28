@@ -67,7 +67,7 @@ export default function Community() {
     };
 
     return (
-        <div className="flex h-[calc(100dvh-9rem)] md:h-[calc(100vh-4rem)] bg-[#0d1117] overflow-hidden w-full relative">
+        <div className="flex h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] bg-[#0d1117] overflow-hidden w-full relative">
             {/* MAIN CHAT AREA */}
             <div className="flex-1 flex flex-col relative h-full w-full min-w-0">
 
@@ -146,7 +146,7 @@ export default function Community() {
                     {showEmojiPicker && (
                         <>
                             <div className="fixed inset-0 z-30" onClick={() => setShowEmojiPicker(false)} />
-                            <div className="absolute bottom-20 right-0 md:right-6 z-40 shadow-2xl rounded-xl overflow-hidden border border-white/10 max-w-[90vw]">
+                            <div className="absolute bottom-16 right-0 md:right-6 z-40 shadow-2xl rounded-xl overflow-hidden border border-white/10 max-w-[95vw] sm:max-w-xs md:max-w-sm">
                                 <EmojiPicker
                                     theme="dark"
                                     onEmojiClick={onEmojiClick}

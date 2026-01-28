@@ -62,17 +62,17 @@ function PostCard({
 
     const navigate = useNavigate();
     return (
-        <article className="block w-full bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl p-3 md:p-5 shadow-lg hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.3)] hover:border-blue-500/30 transition duration-300 group">
+        <article className="block w-full bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl p-4 md:p-5 shadow-lg hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.3)] hover:border-blue-500/30 transition duration-300 group">
             <div className="flex gap-3 md:gap-4 h-full">
-                <div className="flex flex-col items-center gap-1 w-12 flex-shrink-0">
+                <div className="flex flex-col items-center gap-2 w-10 md:w-12 flex-shrink-0">
                     <button onClick={() => votePost(id, 'up')}
-                        className={`p-1 rounded transition ${userVote === "up" ? "text-blue-500" : "text-zinc-400 hover:text-blue-400"}`}>
-                        <ThumbsUp size={18} />
+                        className={`p-2 rounded-lg transition ${userVote === "up" ? "text-blue-500 bg-blue-500/10" : "text-zinc-400 hover:text-blue-400 hover:bg-white/5"}`}>
+                        <ThumbsUp size={20} />
                     </button>
-                    <span className={`text-sm font-semibold transition tabular-nums text-center ${userVote === "up" ? "text-blue-500" : userVote === "down" ? "text-red-500" : "text-white"}`}>{voteCount}</span>
+                    <span className={`text-sm font-bold transition tabular-nums text-center ${userVote === "up" ? "text-blue-500" : userVote === "down" ? "text-red-500" : "text-white"}`}>{voteCount}</span>
                     <button onClick={() => votePost(id, 'down')}
-                        className={`p-1 rounded transition ${userVote === "down" ? "text-red-500" : "text-zinc-400 hover:text-red-400"}`}>
-                        <ThumbsDown size={18} />
+                        className={`p-2 rounded-lg transition ${userVote === "down" ? "text-red-500 bg-red-500/10" : "text-zinc-400 hover:text-red-400 hover:bg-white/5"}`}>
+                        <ThumbsDown size={20} />
                     </button>
                 </div>
                 <div className="flex-1 flex flex-col min-h-[180px]">
@@ -149,19 +149,20 @@ function PostCard({
                             ))}
                         </div>
                     )}
-                    <div className="flex items-center justify-between text-xs text-zinc-400 mt-auto">
-                        <div className="flex gap-4">
-                            <button onClick={() => navigate(`/post/${id}`)} className="flex items-center gap-2 hover:text-white transition">
-                                <MessageSquare size={14} />
-                                <span>{displayCommentsCount} comments</span>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mt-auto md:pt-2">
+                        <div className="flex gap-4 md:gap-6">
+                            <button onClick={() => navigate(`/post/${id}`)} className="flex items-center gap-2 hover:text-white transition py-1">
+                                <MessageSquare size={16} />
+                                <span className="hidden sm:inline">{displayCommentsCount} comments</span>
+                                <span className="sm:hidden">{displayCommentsCount}</span>
                             </button>
-                            <button onClick={() => toggleBookmark(id)} className={`flex items-center gap-2 transition ${isBookmarked ? "text-yellow-500" : "hover:text-white"}`}>
-                                <Bookmark size={14} fill={isBookmarked ? "currentColor" : "none"} />
-                                <span>{isBookmarked ? "Saved" : "Save"}</span>
+                            <button onClick={() => toggleBookmark(id)} className={`flex items-center gap-2 transition py-1 ${isBookmarked ? "text-yellow-500" : "hover:text-white"}`}>
+                                <Bookmark size={16} fill={isBookmarked ? "currentColor" : "none"} />
+                                <span className="hidden sm:inline">{isBookmarked ? "Saved" : "Save"}</span>
                             </button>
-                            <button onClick={handleShare} className="flex items-center gap-2 hover:text-white transition">
-                                {isShared ? <Check size={14} className="text-green-500" /> : <Share2 size={14} />}
-                                <span className={isShared ? "text-green-500" : ""}>{isShared ? "Copied Link" : "Share"}</span>
+                            <button onClick={handleShare} className="flex items-center gap-2 hover:text-white transition py-1">
+                                {isShared ? <Check size={16} className="text-green-500" /> : <Share2 size={16} />}
+                                <span className="hidden sm:inline">{isShared ? "Copied" : "Share"}</span>
                             </button>
                         </div>
                         {codeSnippet && (
