@@ -11,7 +11,10 @@ import SearchResults from "./pages/searchresults";
 import BottomNav from "./components/bottomnav/bottomnav";
 import SplashScreen from "./components/splashscreen/splashscreen";
 import { ChatProvider } from "./context/ChatContext";
+import { NotificationProvider } from "./context/NotificationContext";
+
 import Chat from "./pages/chat";
+import Notifications from "./pages/notifications";
 import { useState } from "react";
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,12 +25,12 @@ function App() {
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="flex">
-        <Sidebar />
-        <main className={`pt-16 pl-0 md:pl-52 min-h-screen w-full ${location.pathname.startsWith('/chat/') ? 'pb-0' : 'pb-20 md:pb-0'}`}>
-          <ChatProvider>
+    <ChatProvider>
+      <NotificationProvider>
+        <Navbar />
+        <div className="flex">
+          <Sidebar />
+          <main className={`pt-16 pl-0 md:pl-52 min-h-screen w-full ${location.pathname.startsWith('/chat/') ? 'pb-0' : 'pb-20 md:pb-0'}`}>
             <Routes>
               <Route path="/" element={<Navigate to="/feed" />} />
               <Route path="/post/:postId" element={<PostDetails />} />
@@ -40,12 +43,13 @@ function App() {
               <Route path="/search" element={<SearchResults />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/chat/:chatId" element={<Chat />} />
+              <Route path="/notifications" element={<Notifications />} />
             </Routes>
-          </ChatProvider>
-        </main>
-      </div>
-      <BottomNav />
-    </>
+          </main>
+        </div>
+        <BottomNav />
+      </NotificationProvider>
+    </ChatProvider>
   );
 }
 export default App;
