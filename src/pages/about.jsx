@@ -47,26 +47,26 @@ const About = () => {
                     <div className="grid gap-6">
                         {[
                             {
-                                name: "Mohammed Sahil",
-                                role: "Frontend Lead",
-                                desc: "Passionate about building intuitive, responsive user experiences. Previously at TechFlow, Sahil specializes in React performance optimization and accessible design systems. He believes the best UI is the one you don't even notice.",
-                                github: "https://github.com/sahil740g",
-                                githubUser: "sahil740g",
-                                linkedin: "https://www.linkedin.com/in/mohammed-sahil-49399731b",
-                                linkedinUser: "Mohammed Sahil"
-                            },
-                            {
                                 name: "Dishant Savadia",
-                                role: "Backend Architect",
-                                desc: "Expert in distributed systems and scalable infrastructure. Dishant spent 5 years contributing to major open-source databases before joining ECHO. He loves Rust, Go, and solving complex concurrency problems.",
+                                role: "Backend Head",
+                                desc: "I’m a BCA student who learns best by building real projects. I enjoy turning ideas into clean and functional web experiences using React and modern frontend tools. Recently, I built DevMap — a roadmap-style website to help students learn tech in the right order.",
                                 github: "https://github.com/dishant11max",
                                 githubUser: "dishant11max",
                                 linkedin: "https://www.linkedin.com/in/dishant-savadia-b38b0a289/",
                                 linkedinUser: "Dishant Savadia"
                             },
                             {
+                                name: "Mohammed Sahil",
+                                role: "Frontend Lead",
+                                desc: "I’m always eager to learn and adapt to new technologies. I believe in continuous learning, collaboration, and leveraging technology to solve real-world problems. Currently learning Backend and Android Development, with an interest in Project Management",
+                                github: "https://github.com/sahil740g",
+                                githubUser: "sahil740g",
+                                linkedin: "https://www.linkedin.com/in/mohammed-sahil-49399731b",
+                                linkedinUser: "Mohammed Sahil"
+                            },
+                            {
                                 name: "Sk Tahsin Ali",
-                                role: "Product Designer",
+                                role: "Frontend Developer",
                                 desc: "Crafting distinct visual identities and seamless workflows. Tahsin bridges the gap between engineering and art, ensuring that every pixel serves a purpose. He is a minimalist at heart and a typography nerd.",
                                 github: "#",
                                 githubUser: "tahsinali",
@@ -75,7 +75,7 @@ const About = () => {
                             },
                             {
                                 name: "Swatipayal Mohanty",
-                                role: "Community Lead",
+                                role: "Backend Developer",
                                 desc: "Building bridges between ECHO and the global developer ecosystem. Swatipayal organizes our hackathons, manages the mentorship program, and ensures that every voice in the community is heard and valued.",
                                 github: "#",
                                 githubUser: "swatipayal",

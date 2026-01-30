@@ -1,7 +1,7 @@
 # ECHO - Frontend Product Requirements Document (PRD)
 
-**Version:** 1.2
-**Date:** 2026-01-26
+**Version:** 1.3
+**Date:** 2026-01-28
 **Status:** In Development (Mobile Optimization Phase)
 
 ---
@@ -24,7 +24,7 @@
     - `emoji-picker-react`: For emoji selection in chat and posts.
     - `react-easy-crop`: For profile image customization (Avatar & Banner).
 - **Routing**: React Router DOM v6
-- **State Management**: React Context API (`AuthContext`, `PostsContext`, `CommentsContext`)
+- **State Management**: React Context API (`AuthContext`, `PostsContext`, `CommentsContext`, `ChatContext`, `NotificationContext`)
 - **Build Tool**: Vite
 
 ---
@@ -99,13 +99,25 @@ Comprehensive identity management.
   - **Image Cropping**: Advanced pan/zoom cropping for both avatars and banners.
   - **Mobile Optimized**: Compact bottom-sheet style modal on mobile for better reachability.
 
-### 3.6 Navigation Structure
+### 3.7 Notifications & Alerts
+- **System**: Centralized notification center.
+- **Trigger**:
+  - Likes, Comments, New Followers.
+  - Mentions in Posts/Comments.
+- **UI**:
+  - Desktop: Dropdown/Panel in NavbarActions.
+  - Mobile: Integrated into Bottom Nav and accessible via "Activity" view if needed.
+  - **Visuals**: Red notification badges/dots on icons.
+
+### 3.8 Navigation Structure
 - **Desktop**: Persistent Left Sidebar (Navigation) + Right Sidebar (Widgets).
 - **Mobile**:
-  - Top Navbar (Logo, basic actions).
-  - Bottom Navigation Bar (Feed, Query, Trending, Community, Profile).
-  - **Floating Action Button (+)**: Configured to open **New Query** modal directly for quick help.
-  - Smart hiding of non-essential UI elements.
+  - **Top Navbar**: 
+    - Logo.
+    - Right Actions: Search Icon (activates overlay), Settings Icon (replaces profile).
+  - **Bottom Navigation Bar**: Feed, Query, Trending, Community, Profile. Includes Notification Badges.
+  - **Floating Action Button (+)**: Triggers "New Post" modal (context-aware).
+  - **Search**: Dedicated responsive Search Overlay for better mobile UX.
 
 ---
 
