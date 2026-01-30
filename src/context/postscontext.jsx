@@ -1,145 +1,296 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "./authcontext";
 
 const PostsContext = createContext();
 
 export function PostsProvider({ children }) {
-    const [posts, setPosts] = useState([
-        {
-            id: 1,
-            votes: 142,
-            username: "Dishant Savadia",
-            handle: "@dishantsav123",
-            time: "2h ago",
-            title: "Building a Real-Time Collaboration Tool with WebSockets",
-            description: "Just finished implementing a real-time collaboration, The performance are incredible",
-            tags: ["WebSockets", "JavaScript"],
-            commentsCount: 15,
-            codeSnippet: `const socket = new WebSocket("ws://localhost:8080");
-socket.onmessage = (event) => {
-    console.log(event.data);
-};`,
-            userVote: null
-        },
-        {
-            id: 2,
-            votes: 89,
-            username: "Sarah Jenkins",
-            handle: "@sarahj_dev",
-            time: "4h ago",
-            title: "Why you should use TypeScript in 2024",
-            description: "TypeScript has become the industry standard for large scale applications. Here is why...",
-            tags: ["TypeScript", "WebDev"],
-            commentsCount: 32,
-            userVote: null
-        },
-        {
-            id: 3,
-            votes: 12,
-            username: "Alex Chen",
-            handle: "@alexc_dev",
-            time: "1h ago",
-            title: "How to fix React hydration error with extensive use of random values?",
-            description: "I'm getting 'Text content does not match server-rendered HTML' when using Math.random() in my components. What is the best practice for this?",
-            tags: ["React", "NextJS", "Hydration"],
-            commentsCount: 5,
-            userVote: null,
-            type: 'query'
-        },
-    ]);
+  const { user } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    const addPost = (newPost) => {
-        const post = {
-            id: Date.now(),
-            votes: 0,
-            username: newPost.username || "Anonymous",
-            handle: newPost.handle || "@anonymous",
-            avatar: newPost.avatar, // Add avatar
-            time: "Just now",
-            commentsCount: 0,
-            ...newPost,
-            userVote: null // Initialize with no vote
-        };
-        setPosts([post, ...posts]);
-    };
+  // Fetch posts from Supabase on mount
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
-    const votePost = (postId, type) => {
-        setPosts(prevPosts => prevPosts.map(post => {
-            if (post.id === postId) {
-                let newVoteCount = post.votes;
-                let newUserVote = post.userVote;
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select(
+          `
+                    *,
+                    profiles:author_id (
+                        id,
+                        name,
+                        handle,
+                        avatar_url
+                    )
+                `,
+        )
+        .order("created_at", { ascending: false });
 
-                if (newUserVote === type) {
-                    // Toggle off (remove vote)
-                    newVoteCount = type === 'up' ? newVoteCount - 1 : newVoteCount + 1;
-                    newUserVote = null;
-                } else if (!newUserVote) {
-                    // Add new vote
-                    newVoteCount = type === 'up' ? newVoteCount + 1 : newVoteCount - 1;
-                    newUserVote = type;
-                } else {
-                    // Switch vote
-                    newVoteCount = type === 'up' ? newVoteCount + 2 : newVoteCount - 2;
-                    newUserVote = type;
-                }
+      if (error) throw error;
 
-                return { ...post, votes: newVoteCount, userVote: newUserVote };
-            }
-            return post;
-        }));
-    };
+      // Transform data to match frontend structure
+      const transformedPosts = data.map((post) => ({
+        id: post.id,
+        votes: post.votes || 0,
+        username: post.profiles?.name || "Anonymous",
+        handle: post.profiles?.handle || "@anonymous",
+        avatar: post.profiles?.avatar_url,
+        authorId: post.author_id,
+        time: getRelativeTime(post.created_at),
+        title: post.title,
+        description: post.description,
+        tags: post.tags || [],
+        commentsCount: 0, // Will be updated when comments are fetched
+        codeSnippet: post.code_snippet,
+        type: post.type || "post",
+        userVote: null, // Will be set based on user's votes
+      }));
 
-    const getTrendingTags = (limit = 5) => {
-        const tagCounts = {};
+      setPosts(transformedPosts);
 
-        posts.forEach(post => {
-            if (post.tags && Array.isArray(post.tags)) {
-                post.tags.forEach(tag => {
-                    const normalizedTag = tag.trim(); // Case sensitive for now, or .toLowerCase() if preferred
-                    tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
-                });
-            }
-        });
+      // Fetch user's votes if logged in
+      if (user) {
+        await fetchUserVotes(transformedPosts);
+      }
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        const sortedTags = Object.entries(tagCounts)
-            .sort(([, countA], [, countB]) => countB - countA)
-            .slice(0, limit)
-            .map(([name, count]) => ({
-                name,
-                count: `${count} posts` // Formatting as requested string format
-            }));
+  const fetchUserVotes = async (postsData) => {
+    if (!user) return;
+    try {
+      const { data: votes, error } = await supabase
+        .from("votes")
+        .select("post_id, vote_type")
+        .eq("user_id", user.id);
 
-        return sortedTags;
-    };
+      if (error) throw error;
 
-    const getCommunityStats = () => {
-        if (!posts || !Array.isArray(posts)) {
-            return {
-                totalUsers: 0,
-                onlineUsers: 0,
-                totalPosts: 0
-            };
+      const voteMap = {};
+      votes?.forEach((v) => {
+        voteMap[v.post_id] = v.vote_type;
+      });
+
+      setPosts((prev) =>
+        prev.map((post) => ({
+          ...post,
+          userVote: voteMap[post.id] || null,
+        })),
+      );
+    } catch (error) {
+      console.error("Error fetching votes:", error);
+    }
+  };
+
+  // Re-fetch votes when user changes
+  useEffect(() => {
+    if (user && posts.length > 0) {
+      fetchUserVotes(posts);
+    }
+  }, [user]);
+
+  const addPost = async (newPost) => {
+    if (!user) {
+      console.error("Must be logged in to create a post");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .insert({
+          author_id: user.id,
+          title: newPost.title,
+          description: newPost.description,
+          code_snippet: newPost.codeSnippet,
+          tags: newPost.tags || [],
+          type: newPost.type || "post",
+        })
+        .select(
+          `
+                    *,
+                    profiles:author_id (
+                        id,
+                        name,
+                        handle,
+                        avatar_url
+                    )
+                `,
+        )
+        .single();
+
+      if (error) throw error;
+
+      const post = {
+        id: data.id,
+        votes: 0,
+        username: data.profiles?.name || user.name,
+        handle: data.profiles?.handle || user.handle,
+        avatar: data.profiles?.avatar_url || user.avatar,
+        authorId: data.author_id,
+        time: "Just now",
+        title: data.title,
+        description: data.description,
+        tags: data.tags || [],
+        commentsCount: 0,
+        codeSnippet: data.code_snippet,
+        type: data.type,
+        userVote: null,
+      };
+
+      setPosts((prev) => [post, ...prev]);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      alert("Failed to create post: " + error.message);
+    }
+  };
+
+  const votePost = async (postId, type) => {
+    if (!user) {
+      console.error("Must be logged in to vote");
+      return;
+    }
+
+    // Optimistic update
+    setPosts((prevPosts) =>
+      prevPosts.map((post) => {
+        if (post.id === postId) {
+          let newVoteCount = post.votes;
+          let newUserVote = post.userVote;
+
+          if (newUserVote === type) {
+            newVoteCount = type === "up" ? newVoteCount - 1 : newVoteCount + 1;
+            newUserVote = null;
+          } else if (!newUserVote) {
+            newVoteCount = type === "up" ? newVoteCount + 1 : newVoteCount - 1;
+            newUserVote = type;
+          } else {
+            newVoteCount = type === "up" ? newVoteCount + 2 : newVoteCount - 2;
+            newUserVote = type;
+          }
+
+          return { ...post, votes: newVoteCount, userVote: newUserVote };
         }
-        const totalPosts = posts.length;
-
-        // Count unique users based on handle
-        const uniqueUsers = new Set(posts.map(post => post.handle)).size;
-
-        // Simulate online users (e.g., 10% of total users + some random variance, minimum 1)
-        // For a small number of users, we'll just fake a higher number to look good for the demo
-        const onlineUsers = Math.floor(uniqueUsers * 1.5) + 5;
-
-        return {
-            totalUsers: uniqueUsers + 120, // Adding base count to simulate larger community for demo
-            onlineUsers: onlineUsers,
-            totalPosts: totalPosts + 850 // Adding base count to simulate active community
-        };
-    };
-
-    return (
-        <PostsContext.Provider value={{ posts, addPost, votePost, getTrendingTags, getCommunityStats }}>
-            {children}
-        </PostsContext.Provider>
+        return post;
+      }),
     );
+
+    try {
+      const post = posts.find((p) => p.id === postId);
+      const currentVote = post?.userVote;
+
+      if (currentVote === type) {
+        // Remove vote
+        await supabase
+          .from("votes")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("post_id", postId);
+      } else if (!currentVote) {
+        // New vote
+        await supabase
+          .from("votes")
+          .insert({ user_id: user.id, post_id: postId, vote_type: type });
+      } else {
+        // Update vote
+        await supabase
+          .from("votes")
+          .update({ vote_type: type })
+          .eq("user_id", user.id)
+          .eq("post_id", postId);
+      }
+
+      // Update post votes count
+      const newVotes = posts.find((p) => p.id === postId)?.votes;
+      await supabase.from("posts").update({ votes: newVotes }).eq("id", postId);
+    } catch (error) {
+      console.error("Error voting:", error);
+      // Revert on error
+      fetchPosts();
+    }
+  };
+
+  const getTrendingTags = (limit = 5) => {
+    const tagCounts = {};
+
+    posts.forEach((post) => {
+      if (post.tags && Array.isArray(post.tags)) {
+        post.tags.forEach((tag) => {
+          const normalizedTag = tag.trim();
+          tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
+        });
+      }
+    });
+
+    const sortedTags = Object.entries(tagCounts)
+      .sort(([, countA], [, countB]) => countB - countA)
+      .slice(0, limit)
+      .map(([name, count]) => ({
+        name,
+        count: `${count} posts`,
+      }));
+
+    return sortedTags;
+  };
+
+  const getCommunityStats = () => {
+    if (!posts || !Array.isArray(posts)) {
+      return {
+        totalUsers: 0,
+        onlineUsers: 0,
+        totalPosts: 0,
+      };
+    }
+    const totalPosts = posts.length;
+    const uniqueUsers = new Set(posts.map((post) => post.handle)).size;
+    const onlineUsers = Math.floor(uniqueUsers * 1.5) + 5;
+
+    return {
+      totalUsers: uniqueUsers + 120,
+      onlineUsers: onlineUsers,
+      totalPosts: totalPosts + 850,
+    };
+  };
+
+  return (
+    <PostsContext.Provider
+      value={{
+        posts,
+        loading,
+        addPost,
+        votePost,
+        getTrendingTags,
+        getCommunityStats,
+        refetchPosts: fetchPosts,
+      }}
+    >
+      {children}
+    </PostsContext.Provider>
+  );
+}
+
+// Helper function
+function getRelativeTime(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 }
 
 export const usePosts = () => useContext(PostsContext);

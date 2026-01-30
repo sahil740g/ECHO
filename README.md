@@ -1,16 +1,61 @@
-# React + Vite
+# ECHO - Developer Social Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ECHO is a modern, developer-focused social platform designed for sharing knowledge, code snippets, and tech discussions.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend**: React, Vite, TailwindCSS
+- **Backend**: Node.js, Express, Socket.io
+- **Database**: Supabase (PostgreSQL)
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js (v16+)
+- Supabase Account
 
-## Expanding the ESLint configuration
+## Setup
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **Install Dependencies**
+
+   ```bash
+   # Frontend
+   npm install
+
+   # Backend
+   cd server
+   npm install
+   ```
+
+2. **Environment Variables**
+   - Create `.env` in the root directory:
+     ```
+     VITE_SUPABASE_URL=...
+     VITE_SUPABASE_ANON_KEY=...
+     VITE_SOCKET_URL=http://localhost:3001
+     ```
+   - Create `.env` in `server/` directory:
+     ```
+     PORT=3001
+     CLIENT_URL=http://localhost:5173
+     ```
+
+## How to Run
+
+Run the frontend and backend in **two separate terminals**.
+
+### 1. Frontend
+
+```bash
+npm run dev
+```
+
+Runs on: http://localhost:5173
+
+### 2. Backend
+
+```bash
+cd server
+npm run dev
+```
+
+Runs on: http://localhost:3001

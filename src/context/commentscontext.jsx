@@ -1,198 +1,367 @@
-import { createContext, useContext, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { useAuth } from "./authcontext";
+import { supabase } from "../lib/supabase";
+
 const CommentsContext = createContext();
+
 export function CommentsProvider({ children }) {
-  const [posts, setPosts] = useState({
-    1: {
-      id: "1",
-      comments: [
-        {
-          id: 1,
-          text: "This is amazing! WebSockets are truly powerful for real-time apps. 🚀",
-          user: "Alice Johnson",
-          time: "2 hours ago",
-          likes: 12,
-          dislikes: 0,
-          replies: []
-        },
-        {
-          id: 2,
-          text: "Great explanation! Have you considered using Socket.io for fallback support?",
-          user: "Bob Smith",
-          time: "1 hour ago",
-          likes: 8,
-          dislikes: 1,
-          replies: [
-            {
-              id: 101,
-              text: "Yes, Socket.io is great, but native WebSockets are lighter if you don't need all the features.",
-              user: "Dishant Savadia",
-              time: "45 mins ago",
-              likes: 5,
-              dislikes: 0
-            }
-          ]
-        },
-        {
-          id: 3,
-          text: "Can you share the repo link? Would love to check out the code!",
-          user: "Charlie",
-          time: "30 mins ago",
-          likes: 3,
-          dislikes: 0,
-          replies: []
-        }
-      ]
+  const { user } = useAuth();
+  const [commentsByPost, setCommentsByPost] = useState({});
+  const [loadingPosts, setLoadingPosts] = useState({});
+
+  // Fetch comments for a specific post
+  const fetchComments = useCallback(
+    async (postId) => {
+      if (loadingPosts[postId]) return;
+
+      setLoadingPosts((prev) => ({ ...prev, [postId]: true }));
+
+      try {
+        const { data, error } = await supabase
+          .from("comments")
+          .select(
+            `
+          *,
+          profiles:author_id (
+            id,
+            name,
+            handle,
+            avatar_url
+          )
+        `,
+          )
+          .eq("post_id", postId)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+
+        // Build nested structure from flat data
+        const commentsMap = {};
+        const rootComments = [];
+
+        data.forEach((comment) => {
+          commentsMap[comment.id] = {
+            id: comment.id,
+            text: comment.text,
+            codeSnippet: comment.code_snippet,
+            language: comment.language,
+            user: comment.profiles?.name || "Anonymous",
+            avatar: comment.profiles?.avatar_url,
+            authorId: comment.author_id,
+            time: getRelativeTime(comment.created_at),
+            likes: comment.likes || 0,
+            dislikes: comment.dislikes || 0,
+            userVote: null,
+            parentId: comment.parent_id,
+            replies: [],
+          };
+        });
+
+        // Build tree
+        Object.values(commentsMap).forEach((comment) => {
+          if (comment.parentId && commentsMap[comment.parentId]) {
+            commentsMap[comment.parentId].replies.push(comment);
+          } else if (!comment.parentId) {
+            rootComments.push(comment);
+          }
+        });
+
+        setCommentsByPost((prev) => ({
+          ...prev,
+          [postId]: { id: postId, comments: rootComments },
+        }));
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+      } finally {
+        setLoadingPosts((prev) => ({ ...prev, [postId]: false }));
+      }
+    },
+    [loadingPosts],
+  );
+
+  const addComment = async (
+    postId,
+    text,
+    codeSnippet = null,
+    language = null,
+  ) => {
+    if (!user) {
+      console.error("Must be logged in to comment");
+      return;
     }
-  });
-  const addComment = (postId, text, codeSnippet = null, language = null) => {
-    setPosts(prev => {
-      const existingPost = prev[postId] || { id: postId, comments: [] };
+
+    // Optimistic update
+    const tempId = `temp_${Date.now()}`;
+    const optimisticComment = {
+      id: tempId,
+      text,
+      codeSnippet,
+      language,
+      user: user.name,
+      avatar: user.avatar || user.avatar_url,
+      time: "just now",
+      likes: 0,
+      dislikes: 0,
+      userVote: null,
+      replies: [],
+    };
+
+    setCommentsByPost((prev) => {
+      const existing = prev[postId] || { id: postId, comments: [] };
       return {
         ...prev,
         [postId]: {
-          ...existingPost,
-          comments: [
-            ...existingPost.comments,
-            {
-              id: Date.now(),
-              text,
-              codeSnippet,
-              language,
-              user: "Guest",
-              time: "just now",
-              likes: 0,
-              dislikes: 0,
-              userVote: null,
-              replies: []
-            }
-          ]
-        }
+          ...existing,
+          comments: [...existing.comments, optimisticComment],
+        },
       };
     });
+
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .insert({
+          post_id: postId,
+          author_id: user.id,
+          text,
+          code_snippet: codeSnippet,
+          language,
+        })
+        .select(
+          `
+          *,
+          profiles:author_id (
+            id,
+            name,
+            handle,
+            avatar_url
+          )
+        `,
+        )
+        .single();
+
+      if (error) throw error;
+
+      // Replace optimistic with real
+      setCommentsByPost((prev) => {
+        const existing = prev[postId];
+        if (!existing) return prev;
+
+        return {
+          ...prev,
+          [postId]: {
+            ...existing,
+            comments: existing.comments.map((c) =>
+              c.id === tempId
+                ? {
+                    id: data.id,
+                    text: data.text,
+                    codeSnippet: data.code_snippet,
+                    language: data.language,
+                    user: data.profiles?.name || user.name,
+                    avatar: data.profiles?.avatar_url || user.avatar,
+                    time: "just now",
+                    likes: 0,
+                    dislikes: 0,
+                    userVote: null,
+                    replies: [],
+                  }
+                : c,
+            ),
+          },
+        };
+      });
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      // Remove optimistic on error
+      setCommentsByPost((prev) => {
+        const existing = prev[postId];
+        if (!existing) return prev;
+        return {
+          ...prev,
+          [postId]: {
+            ...existing,
+            comments: existing.comments.filter((c) => c.id !== tempId),
+          },
+        };
+      });
+    }
   };
 
-  /* 
-   * Helper to update specific comment recursively 
-   */
-  const updateCommentVote = (comments, commentId, type) => {
-    return comments.map(comment => {
-      if (comment.id === commentId) {
-        let newLikes = comment.likes;
-        let newDislikes = comment.dislikes;
-        let newUserVote = comment.userVote;
+  const addReply = async (
+    postId,
+    parentCommentId,
+    text,
+    codeSnippet = null,
+    language = null,
+  ) => {
+    if (!user) {
+      console.error("Must be logged in to reply");
+      return;
+    }
 
-        if (newUserVote === type) {
-          // Toggle off
-          if (type === 'up') newLikes--;
-          else newDislikes--;
-          newUserVote = null;
-        } else if (newUserVote) {
-          // Switch vote
-          if (type === 'up') {
-            newLikes++;
-            newDislikes--;
-          } else {
-            newLikes--;
-            newDislikes++;
-          }
-          newUserVote = type;
-        } else {
-          // Add vote
-          if (type === 'up') newLikes++;
-          else newDislikes++;
-          newUserVote = type;
+    const tempId = `temp_${Date.now()}`;
+    const optimisticReply = {
+      id: tempId,
+      text,
+      codeSnippet,
+      language,
+      user: user.name,
+      avatar: user.avatar || user.avatar_url,
+      time: "just now",
+      likes: 0,
+      dislikes: 0,
+      userVote: null,
+      replies: [],
+    };
+
+    // Optimistic update
+    const addReplyToComments = (comments) => {
+      return comments.map((comment) => {
+        if (comment.id === parentCommentId) {
+          return { ...comment, replies: [...comment.replies, optimisticReply] };
         }
+        if (comment.replies?.length > 0) {
+          return { ...comment, replies: addReplyToComments(comment.replies) };
+        }
+        return comment;
+      });
+    };
 
-        return {
-          ...comment,
-          likes: newLikes,
-          dislikes: newDislikes,
-          userVote: newUserVote
-        };
-      }
-
-      if (comment.replies && comment.replies.length > 0) {
-        return {
-          ...comment,
-          replies: updateCommentVote(comment.replies, commentId, type)
-        };
-      }
-
-      return comment;
-    });
-  };
-
-  const likeComment = (postId, commentId, type) => {
-    setPosts(prev => {
-      const post = prev[postId];
-      if (!post) return prev;
-
+    setCommentsByPost((prev) => {
+      const existing = prev[postId];
+      if (!existing) return prev;
       return {
         ...prev,
         [postId]: {
-          ...post,
-          comments: updateCommentVote(post.comments, commentId, type)
-        }
+          ...existing,
+          comments: addReplyToComments(existing.comments),
+        },
       };
     });
-  };
 
-  const addReply = (postId, commentId, text, codeSnippet = null, language = null) => {
-    setPosts(prev => {
-      const post = prev[postId];
-      if (!post) return prev;
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .insert({
+          post_id: postId,
+          author_id: user.id,
+          parent_id: parentCommentId,
+          text,
+          code_snippet: codeSnippet,
+          language,
+        })
+        .select()
+        .single();
 
-      const addReplyToComments = (comments) => {
-        return comments.map(comment => {
-          if (comment.id === commentId) {
+      if (error) throw error;
+
+      // Replace temp with real ID
+      const replaceTemp = (comments) => {
+        return comments.map((comment) => {
+          if (comment.id === parentCommentId) {
             return {
               ...comment,
-              replies: [
-                ...comment.replies,
-                {
-                  id: Date.now(),
-                  text,
-                  codeSnippet,
-                  language,
-                  user: "Guest",
-                  time: "just now",
-                  likes: 0,
-                  dislikes: 0,
-                  userVote: null,
-                  replies: []
-                }
-              ]
+              replies: comment.replies.map((r) =>
+                r.id === tempId ? { ...r, id: data.id } : r,
+              ),
             };
           }
-          if (comment.replies && comment.replies.length > 0) {
-            return {
-              ...comment,
-              replies: addReplyToComments(comment.replies)
-            };
+          if (comment.replies?.length > 0) {
+            return { ...comment, replies: replaceTemp(comment.replies) };
           }
           return comment;
         });
       };
 
+      setCommentsByPost((prev) => {
+        const existing = prev[postId];
+        if (!existing) return prev;
+        return {
+          ...prev,
+          [postId]: {
+            ...existing,
+            comments: replaceTemp(existing.comments),
+          },
+        };
+      });
+    } catch (error) {
+      console.error("Error adding reply:", error);
+      // Revert on error
+      fetchComments(postId);
+    }
+  };
+
+  const likeComment = (postId, commentId, type) => {
+    // Local-only for now (comment votes table not in schema)
+    const updateVote = (comments) => {
+      return comments.map((comment) => {
+        if (comment.id === commentId) {
+          let newLikes = comment.likes;
+          let newDislikes = comment.dislikes;
+          let newUserVote = comment.userVote;
+
+          if (newUserVote === type) {
+            if (type === "up") newLikes--;
+            else newDislikes--;
+            newUserVote = null;
+          } else if (newUserVote) {
+            if (type === "up") {
+              newLikes++;
+              newDislikes--;
+            } else {
+              newLikes--;
+              newDislikes++;
+            }
+            newUserVote = type;
+          } else {
+            if (type === "up") newLikes++;
+            else newDislikes++;
+            newUserVote = type;
+          }
+
+          return {
+            ...comment,
+            likes: newLikes,
+            dislikes: newDislikes,
+            userVote: newUserVote,
+          };
+        }
+        if (comment.replies?.length > 0) {
+          return { ...comment, replies: updateVote(comment.replies) };
+        }
+        return comment;
+      });
+    };
+
+    setCommentsByPost((prev) => {
+      const existing = prev[postId];
+      if (!existing) return prev;
       return {
         ...prev,
         [postId]: {
-          ...post,
-          comments: addReplyToComments(post.comments)
-        }
+          ...existing,
+          comments: updateVote(existing.comments),
+        },
       };
     });
   };
 
   const getCommentCount = (postId) => {
-    const post = posts[postId];
-    if (!post || !post.comments) return 0;
+    const post = commentsByPost[postId];
+    if (!post?.comments) return 0;
 
     const countRecursive = (comments) => {
       let count = 0;
-      comments.forEach(c => {
+      comments.forEach((c) => {
         count++;
-        if (c.replies && c.replies.length > 0) {
+        if (c.replies?.length > 0) {
           count += countRecursive(c.replies);
         }
       });
@@ -203,9 +372,34 @@ export function CommentsProvider({ children }) {
   };
 
   return (
-    <CommentsContext.Provider value={{ posts, addComment, likeComment, addReply, getCommentCount }}>
+    <CommentsContext.Provider
+      value={{
+        posts: commentsByPost,
+        addComment,
+        likeComment,
+        addReply,
+        getCommentCount,
+        fetchComments,
+      }}
+    >
       {children}
     </CommentsContext.Provider>
   );
 }
+
+function getRelativeTime(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
 export const useComments = () => useContext(CommentsContext);
