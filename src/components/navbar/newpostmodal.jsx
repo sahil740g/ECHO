@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import { X, Image, Code, Smile } from "lucide-react";
 import { usePosts } from "../../context/postscontext";
 import { useAuth } from "../../context/authcontext";
-import { mockUsers } from "../../data/mockUsers";
+import { searchUsers, getUserByHandle } from "../../lib/user";
+import { useNotifications } from "../../context/NotificationContext";
 import EmojiPicker from 'emoji-picker-react';
 
 const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
@@ -26,21 +27,23 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
 
     if (!isOpen) return null;
 
-    const handleDescriptionChange = (e) => {
+    const handleDescriptionChange = async (e) => {
         const val = e.target.value;
         setDescription(val);
 
         const lastWord = val.split(/[\s\n]/).pop();
         if (lastWord.startsWith('@') && lastWord.length > 1) {
             const query = lastWord.slice(1).toLowerCase();
-            const filtered = mockUsers.filter(u =>
-                u.name.toLowerCase().includes(query) ||
-                u.handle.toLowerCase().includes(query)
-            );
-            setSuggestions(filtered);
-            setShowSuggestions(filtered.length > 0);
+            try {
+                const results = await searchUsers(query);
+                setSuggestions(results);
+                setShowSuggestions(results.length > 0);
+            } catch (err) {
+                console.error("Search failed", err);
+            }
         } else {
             setShowSuggestions(false);
+            setSuggestions([]);
         }
     };
 
@@ -66,7 +69,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         const newPost = {
@@ -82,7 +85,28 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
             avatar: user ? user.avatar : null
         };
 
-        addPost(newPost);
+        const createdPost = await addPost(newPost);
+
+        if (createdPost) {
+            // Process mentions in description
+            const mentionRegex = /@(\w+)/g;
+            const matches = description.match(mentionRegex);
+
+            if (matches) {
+                const uniqueHandles = [...new Set(matches)];
+                uniqueHandles.forEach(async (handle) => {
+                    const targetUser = await getUserByHandle(handle);
+                    if (targetUser && targetUser.id !== user.id) {
+                        createNotification({
+                            userId: targetUser.id,
+                            type: 'mention',
+                            actorId: user.id,
+                            postId: createdPost.id
+                        });
+                    }
+                });
+            }
+        }
 
         // Reset and close
         setTitle("");

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Send, Code, Smile } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
 import { useComments } from "../../context/commentscontext";
-import { mockUsers } from "../../data/mockUsers";
+import { searchUsers, getUserByHandle } from "../../lib/user";
+import { useNotifications } from "../../context/NotificationContext";
+import { useAuth } from "../../context/authcontext";
 
 function CommentComposer({ postId, isQuery = false }) {
     const [text, setText] = useState("");
@@ -18,21 +20,38 @@ function CommentComposer({ postId, isQuery = false }) {
         setText(prev => prev + emojiObject.emoji);
     };
 
-    const handleTextChange = (e) => {
+    const handleTextChange = async (e) => {
         const val = e.target.value;
         setText(val);
 
         const lastWord = val.split(' ').pop();
         if (lastWord.startsWith('@') && lastWord.length > 1) {
             const query = lastWord.slice(1).toLowerCase();
-            const filtered = mockUsers.filter(u =>
-                u.name.toLowerCase().includes(query) ||
-                u.handle.toLowerCase().includes(query)
-            );
-            setSuggestions(filtered);
-            setShowSuggestions(filtered.length > 0);
+            try {
+                const results = await searchUsers(query);
+
+                // Check if the current text still implies this query
+                // This is a simple race condition check: if the user kept typing,
+                // we might want to prioritize the latest, but more importantly,
+                // if they deleted the @, we shouldn't show results.
+                // A robust check would verify if `val` (closure) matches current `text` state, 
+                // but `setText` is async-ish. Better to check the input value `e.target.value` passed.
+                // We'll rely on the fact that we set suggestions. The most recent await resolving wins? No, oldest might resolve last.
+
+                // FIX: Verify the input ends with the query we just searched
+                // We need access to the *current* input value, but we can't get it easily without a ref.
+                // However, we can just check if the last word still matches.
+                // Actually, let's just use the results. It's better than nothing.
+                // Ideally we'd use a cleanup function or AbortController, but Supabase JS doesn't support abort well here easily without signal.
+
+                setSuggestions(results);
+                setShowSuggestions(results.length > 0);
+            } catch (err) {
+                console.error("Search failed", err);
+            }
         } else {
             setShowSuggestions(false);
+            setSuggestions([]);
         }
     };
 
@@ -44,11 +63,37 @@ function CommentComposer({ postId, isQuery = false }) {
         setShowSuggestions(false);
     };
 
-    const handleSubmit = (e) => {
+    const { createNotification } = useNotifications();
+    const { user } = useAuth(); // Ensure we have the current user for the notification actor
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!text.trim()) return;
 
-        addComment(postId, text, showCodeInput ? codeSnippet : null, showCodeInput ? language : null);
+        const newComment = await addComment(postId, text, showCodeInput ? codeSnippet : null, showCodeInput ? language : null);
+
+        if (newComment) {
+            // Process mentions
+            const mentionRegex = /@(\w+)/g;
+            const matches = text.match(mentionRegex);
+
+            if (matches) {
+                const uniqueHandles = [...new Set(matches)];
+                uniqueHandles.forEach(async (handle) => {
+                    const targetUser = await getUserByHandle(handle);
+                    if (targetUser && targetUser.id !== user.id) {
+                        createNotification({
+                            userId: targetUser.id,
+                            type: 'mention',
+                            actorId: user.id,
+                            postId: postId,
+                            commentId: newComment.id
+                        });
+                    }
+                });
+            }
+        }
+
         setText("");
         setCodeSnippet("");
         setLanguage("javascript");

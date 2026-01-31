@@ -160,23 +160,24 @@ export function CommentsProvider({ children }) {
             comments: existing.comments.map((c) =>
               c.id === tempId
                 ? {
-                    id: data.id,
-                    text: data.text,
-                    codeSnippet: data.code_snippet,
-                    language: data.language,
-                    user: data.profiles?.name || user.name,
-                    avatar: data.profiles?.avatar_url || user.avatar,
-                    time: "just now",
-                    likes: 0,
-                    dislikes: 0,
-                    userVote: null,
-                    replies: [],
-                  }
+                  id: data.id,
+                  text: data.text,
+                  codeSnippet: data.code_snippet,
+                  language: data.language,
+                  user: data.profiles?.name || user.name,
+                  avatar: data.profiles?.avatar_url || user.avatar,
+                  time: "just now",
+                  likes: 0,
+                  dislikes: 0,
+                  userVote: null,
+                  replies: [],
+                }
                 : c,
             ),
           },
         };
       });
+      return { id: data.id, ...data };
     } catch (error) {
       console.error("Error adding comment:", error);
       // Remove optimistic on error
@@ -191,6 +192,7 @@ export function CommentsProvider({ children }) {
           },
         };
       });
+      return null;
     }
   };
 
@@ -291,10 +293,12 @@ export function CommentsProvider({ children }) {
           },
         };
       });
+      return { id: data.id, ...data };
     } catch (error) {
       console.error("Error adding reply:", error);
       // Revert on error
       fetchComments(postId);
+      return null;
     }
   };
 

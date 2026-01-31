@@ -370,8 +370,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       setUser((prev) => ({ ...prev, following: newFollowing }));
+      return { action: isFollowing ? 'unfollowed' : 'followed', targetId: targetUser.id };
     } catch (error) {
       console.error("Error toggling follow:", error);
+      return null;
     }
   };
 

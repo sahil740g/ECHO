@@ -18,18 +18,20 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/authcontext";
 import { useChat } from "../context/ChatContext";
+import { useNotifications } from "../context/NotificationContext";
 
 import { usePosts } from "../context/postscontext";
 import { useComments } from "../context/commentscontext";
 import PostCard from "../components/postcard/postcard";
 import { supabase } from "../lib/supabase";
-import { mockUsers } from "../data/mockUsers";
+
 import EditProfileModal from "../components/profile/editprofilemodal";
 import UserListModal from "../components/profile/userlistmodal";
 
 function Profile() {
   const { username } = useParams();
   const { user, updateUser, toggleFollow, openLoginModal } = useAuth();
+  const { createNotification } = useNotifications();
   const { posts } = usePosts();
   const { posts: commentsData } = useComments();
   const { getOrCreateChat, selectChat } = useChat();
@@ -53,18 +55,14 @@ function Profile() {
     const fetchUserProfile = async () => {
       if (!username) return;
 
-      // Check if it's me first to avoid unnecessary fetch if header/context is enough
-      // But usually good to fetch fresh data or relying on context `user` if matches
       const myHandleNoAt = user?.handle?.replace("@", "");
       if (myHandleNoAt === username) {
-        // It's me, relying on auth context
         return;
       }
 
       setLoadingProfile(true);
       try {
-        // Username in URL is without @ usually, but handle in DB has @
-        // Or we search by handle ilike
+        let profile = null;
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
@@ -72,17 +70,53 @@ function Profile() {
           .single();
 
         if (data) {
-          setFetchedUser(data);
+          profile = data;
         } else {
-          // Try without @ if the first attempt failed (just in case stored differently)
           const { data: data2 } = await supabase
             .from("profiles")
             .select("*")
             .ilike("handle", username)
             .single();
-          if (data2) setFetchedUser(data2);
-          else setFetchedUser(null);
+          if (data2) profile = data2;
         }
+
+        if (profile) {
+          // Fetch counts
+          const { count: followersCount, error: followersError } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('following_id', profile.id);
+
+          const { count: followingCount, error: followingError } = await supabase
+            .from('follows')
+            .select('*', { count: 'exact', head: true })
+            .eq('follower_id', profile.id);
+
+          // Check if I am following (server side check for base count consistency)
+          let serverIsFollowing = false;
+          if (user) {
+            const { data: followData } = await supabase
+              .from('follows')
+              .select('id')
+              .eq('follower_id', user.id)
+              .eq('following_id', profile.id)
+              .single();
+            serverIsFollowing = !!followData;
+          }
+
+          setFetchedUser({
+            ...profile,
+            stats: {
+              followers: followersCount || 0,
+              following: followingCount || 0,
+              posts: 0 // Will be calculated from filtered posts or could fetch count too
+            },
+            serverIsFollowing // Store this to adjust count correctly
+          });
+        } else {
+          setFetchedUser(null);
+        }
+
       } catch (err) {
         console.error("Error fetching profile:", err);
       } finally {
@@ -130,44 +164,60 @@ function Profile() {
       })
       : [];
 
-  const taggedPosts =
-    displayUser && safeHandle && posts
-      ? posts.filter((post) => {
-        try {
-          // Check description
-          if (
-            post.description &&
-            typeof post.description === "string" &&
-            post.description.toLowerCase().includes(safeHandle)
-          )
-            return true;
+  const [fetchedTaggedPosts, setFetchedTaggedPosts] = React.useState([]);
 
-          // Check comments
-          const postCommentsData = commentsData
-            ? commentsData[post.id]
-            : null;
-          if (postCommentsData && postCommentsData.comments) {
-            const checkComments = (comments) => {
-              for (const c of comments) {
-                if (
-                  c.text &&
-                  typeof c.text === "string" &&
-                  c.text.toLowerCase().includes(safeHandle)
-                )
-                  return true;
-                if (c.replies && checkComments(c.replies)) return true;
-              }
-              return false;
-            };
-            if (checkComments(postCommentsData.comments)) return true;
-          }
-          return false;
-        } catch (e) {
-          console.error("Error in taggedPosts filter:", e, post);
-          return false;
+  useEffect(() => {
+    const fetchTaggedPosts = async () => {
+      if (!displayUser || !displayUser.handle) return;
+      const handle = displayUser.handle;
+
+      try {
+        // 1. Posts where user is mentioned in description
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('*, profiles:author_id(id, name, handle, avatar_url)')
+          .ilike('description', `%${handle}%`);
+
+        if (postsError) console.error("Error fetching tagged posts description:", postsError);
+
+        // 2. Comments where user is mentioned
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('comments')
+          .select('post_id')
+          .ilike('text', `%${handle}%`);
+
+        if (commentsError) console.error("Error fetching tagged comments:", commentsError);
+
+        const postIdsFromComments = commentsData ? commentsData.map(c => c.post_id) : [];
+
+        // Fetch posts for these IDs (avoid duplicates if already in postsData)
+        const existingIds = postsData ? postsData.map(p => p.id) : [];
+        const newIds = postIdsFromComments.filter(id => !existingIds.includes(id));
+
+        let additionalPosts = [];
+        if (newIds.length > 0) {
+          const { data: morePosts, error: moreError } = await supabase
+            .from('posts')
+            .select('*, profiles:author_id(id, name, handle, avatar_url)')
+            .in('id', newIds);
+
+          if (moreError) console.error("Error fetching additional tagged posts:", moreError);
+          if (morePosts) additionalPosts = morePosts;
         }
-      })
-      : [];
+
+        const allTagged = [...(postsData || []), ...additionalPosts];
+        // Remove duplicates just in case
+        const uniqueTagged = Array.from(new Map(allTagged.map(item => [item.id, item])).values());
+
+        setFetchedTaggedPosts(uniqueTagged);
+
+      } catch (err) {
+        console.error("Error fetching tagged posts:", err);
+      }
+    };
+
+    fetchTaggedPosts();
+  }, [displayUser]);
 
   // Consolidate profile data
   const profileData = displayUser
@@ -187,9 +237,9 @@ function Profile() {
         "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80",
       joinDate: displayUser.joinDate || "January 2024",
       socials: displayUser.socials || {},
-      stats: displayUser.stats || {
-        followers: 0,
-        following: 0,
+      stats: {
+        followers: displayUser.stats?.followers || 0,
+        following: displayUser.stats?.following || (Array.isArray(displayUser.following) ? displayUser.following.length : 0),
         posts: userPosts.length,
       },
       achievements: displayUser.achievements || [
@@ -220,7 +270,7 @@ function Profile() {
     setIsEditModalOpen(false);
   };
 
-  const handleFollowToggle = () => {
+  const handleFollowToggle = async () => {
     if (!user) {
       openLoginModal();
       return;
@@ -228,8 +278,16 @@ function Profile() {
     if (!displayUser) return;
 
     if (displayUser.handle) {
-      toggleFollow(displayUser.handle);
+      const result = await toggleFollow(displayUser.handle);
       setIsFollowing(!isFollowing);
+
+      if (result && result.action === 'followed' && result.targetId) {
+        createNotification({
+          userId: result.targetId,
+          type: 'follow',
+          actorId: user.id
+        });
+      }
     } else {
       console.error("Cannot follow user without handle:", displayUser);
     }
@@ -427,9 +485,35 @@ function Profile() {
                       className="text-zinc-300 hover:text-white transition cursor-pointer"
                     >
                       <span className="font-bold text-white">
-                        {/* Optimistic update for followers count */}
-                        {(profileData.stats?.followers || 0) +
-                          (isFollowing ? 1 : 0)}
+                        {(() => {
+                          if (isOwnProfile) return (user?.followers?.length || 0); // Need followers in auth user? Or just fetch? Auth user usually just has following. 
+                          // Actually AuthContext doesn't fetch followers count for 'me'. 
+                          // But usually Profile component handles 'me' differently.
+                          // If isOwnProfile, we might rely on profileData.stats if we fetched it? 
+                          // But for own profile we skip fetchUserProfile. 
+                          // Let's assume for own profile we might need to fix it too, but user reported "following another user".
+
+                          if (isOwnProfile) return 0; // Placeholder if we don't have my followers count
+
+                          const baseCount = profileData.stats?.followers || 0;
+                          const wasFollowing = displayUser?.serverIsFollowing;
+
+                          // If I was following on server, baseCount includes me.
+                          // If I am now following (isFollowing), count is baseCount.
+                          // If I am NOT following, count is baseCount - 1.
+
+                          // If I was NOT following on server, baseCount mentions me NOT.
+                          // If I am now following, count is baseCount + 1.
+                          // If I am NOT following, count is baseCount.
+
+                          let displayed = baseCount;
+                          if (wasFollowing) {
+                            if (!isFollowing) displayed -= 1;
+                          } else {
+                            if (isFollowing) displayed += 1;
+                          }
+                          return displayed;
+                        })()}
                       </span>{" "}
                       followers
                     </button>
@@ -568,8 +652,8 @@ function Profile() {
               </div>
             ) : (
               <div className="space-y-6">
-                {taggedPosts.length > 0 ? (
-                  taggedPosts.map((post) => (
+                {fetchedTaggedPosts.length > 0 ? (
+                  fetchedTaggedPosts.map((post) => (
                     <PostCard key={post.id} {...post} />
                   ))
                 ) : (

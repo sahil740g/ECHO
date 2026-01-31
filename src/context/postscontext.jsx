@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./authcontext";
+import { useNotifications } from "./NotificationContext";
 
 const PostsContext = createContext();
 
 export function PostsProvider({ children }) {
   const { user } = useAuth();
+  const { createNotification } = useNotifications();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -113,6 +115,7 @@ export function PostsProvider({ children }) {
           code_snippet: newPost.codeSnippet,
           tags: newPost.tags || [],
           type: newPost.type || "post",
+          votes: 0,
         })
         .select(
           `
@@ -147,9 +150,11 @@ export function PostsProvider({ children }) {
       };
 
       setPosts((prev) => [post, ...prev]);
+      return post;
     } catch (error) {
       console.error("Error creating post:", error);
       alert("Failed to create post: " + error.message);
+      return null;
     }
   };
 
@@ -160,6 +165,8 @@ export function PostsProvider({ children }) {
     }
 
     // Optimistic update
+    let finalVoteCount = 0; // To capture the calculated value
+
     setPosts((prevPosts) =>
       prevPosts.map((post) => {
         if (post.id === postId) {
@@ -177,6 +184,10 @@ export function PostsProvider({ children }) {
             newUserVote = type;
           }
 
+          // Clamp removed as per user request to allow negative votes
+          // newVoteCount = Math.max(0, newVoteCount);
+
+          finalVoteCount = newVoteCount; // Capture for server update
           return { ...post, votes: newVoteCount, userVote: newUserVote };
         }
         return post;
@@ -208,9 +219,20 @@ export function PostsProvider({ children }) {
           .eq("post_id", postId);
       }
 
-      // Update post votes count
-      const newVotes = posts.find((p) => p.id === postId)?.votes;
-      await supabase.from("posts").update({ votes: newVotes }).eq("id", postId);
+      // Update post votes count with the CALCULATED value from optimistic update
+      // We rely on finalVoteCount which was captured from the robust prevPosts logic
+      await supabase.from("posts").update({ votes: finalVoteCount }).eq("id", postId);
+
+      // Notification for Like
+      if (type === "up" && (!currentVote || currentVote !== "up") && user.id !== post.authorId) {
+        createNotification({
+          userId: post.authorId,
+          type: "like",
+          actorId: user.id,
+          postId: postId
+        });
+      }
+
     } catch (error) {
       console.error("Error voting:", error);
       // Revert on error

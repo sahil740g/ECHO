@@ -3,7 +3,9 @@ import CommentList from "./commentlist";
 import { useComments } from "../../context/commentscontext";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { mockUsers } from "../../data/mockUsers";
+import { searchUsers, getUserByHandle } from "../../lib/user";
+import { useNotifications } from "../../context/NotificationContext";
+import { useAuth } from "../../context/authcontext";
 
 function Comment({ comment, postId = "1" }) {
     const { likeComment, addReply } = useComments();
@@ -24,21 +26,23 @@ function Comment({ comment, postId = "1" }) {
         }
     };
 
-    const handleTextChange = (e) => {
+    const handleTextChange = async (e) => {
         const val = e.target.value;
         setReplyText(val);
 
         const lastWord = val.split(' ').pop();
         if (lastWord.startsWith('@') && lastWord.length > 1) {
             const query = lastWord.slice(1).toLowerCase();
-            const filtered = mockUsers.filter(u =>
-                u.name.toLowerCase().includes(query) ||
-                u.handle.toLowerCase().includes(query)
-            );
-            setSuggestions(filtered);
-            setShowSuggestions(filtered.length > 0);
+            try {
+                const results = await searchUsers(query);
+                setSuggestions(results);
+                setShowSuggestions(results.length > 0);
+            } catch (err) {
+                console.error("Search failed", err);
+            }
         } else {
             setShowSuggestions(false);
+            setSuggestions([]);
         }
     };
 
@@ -50,10 +54,55 @@ function Comment({ comment, postId = "1" }) {
         setShowSuggestions(false);
     };
 
-    const handleReplySubmit = (e) => {
+    const { createNotification } = useNotifications();
+    const { user } = useAuth(); // We need the current user for actor_id
+
+    const handleReplySubmit = async (e) => {
         e.preventDefault();
         if (!replyText.trim()) return;
-        addReply(postId, comment.id, replyText);
+
+        const newReply = await addReply(postId, comment.id, replyText);
+
+        if (newReply) {
+            // Process mentions
+            const mentionRegex = /@(\w+)/g;
+            const matches = replyText.match(mentionRegex);
+
+            if (matches) {
+                const uniqueHandles = [...new Set(matches)];
+                uniqueHandles.forEach(async (handle) => {
+                    const targetUser = await getUserByHandle(handle);
+                    if (targetUser && targetUser.id !== user.id) {
+                        createNotification({
+                            userId: targetUser.id,
+                            type: 'mention',
+                            actorId: user.id,
+                            postId: postId,
+                            commentId: newReply.id
+                        });
+                    }
+                });
+            } else {
+                // Also notify the parent comment author if not mentioned explicitly (optional, but good UX usually covered by 'reply' type)
+                // But wait, NotificationContext says 'reply' type is "replied to your comment".
+                // That logic should probably be in AddReply or here.
+                // Currently AddReply didn't seem to trigger notifications automatically.
+                // Let's rely on Mention logic for now as requested.
+                // However, the user request specifically said "when i tag user".
+            }
+
+            // If we want to notify the parent comment author about the reply itself (even without tag):
+            if (comment.authorId && comment.authorId !== user.id) {
+                createNotification({
+                    userId: comment.authorId,
+                    type: 'reply',
+                    actorId: user.id,
+                    postId: postId,
+                    commentId: newReply.id
+                });
+            }
+        }
+
         setReplyText("");
         setIsReplying(false);
         setShowSuggestions(false);
