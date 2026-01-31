@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useChat } from "../context/ChatContext";
 import { useAuth } from "../context/authcontext";
-import { mockUsers } from "../data/mockUsers";
 import { Send, ArrowLeft, Search, MoreVertical, Smile } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useNavigate, useParams } from "react-router-dom";

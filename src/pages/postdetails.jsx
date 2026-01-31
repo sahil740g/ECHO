@@ -20,7 +20,7 @@ function PostDetails() {
     }
   }, [postId, fetchComments]);
 
-  const post = posts.find((p) => p.id == postId);
+  const post = posts.find((p) => String(p.id) === String(postId));
   const postComments = commentPosts[postId]?.comments || [];
 
   if (!post)

@@ -114,12 +114,6 @@ function Profile() {
     }
   }
 
-  console.log("Rendering Profile Component", {
-    username,
-    loadingProfile,
-    displayUser,
-  });
-
   const savedPostsIds = displayUser?.savedPosts || [];
   const savedPosts = posts
     ? posts.filter((post) => savedPostsIds.includes(post.id))
@@ -128,20 +122,13 @@ function Profile() {
   const safeHandle = displayUser?.handle
     ? displayUser.handle.toLowerCase()
     : "";
-  console.log("Safe Handle:", safeHandle);
 
   const userPosts =
     displayUser && safeHandle && posts
       ? posts.filter((post) => {
-          try {
-            return post.handle && post.handle.toLowerCase() === safeHandle;
-          } catch (e) {
-            console.error("Error in userPosts filter:", e, post);
-            return false;
-          }
+          return post.handle && post.handle.toLowerCase() === safeHandle;
         })
       : [];
-  console.log("User Posts calculated:", userPosts.length);
 
   const taggedPosts =
     displayUser && safeHandle && posts
@@ -181,7 +168,6 @@ function Profile() {
           }
         })
       : [];
-  console.log("Tagged Posts calculated:", taggedPosts.length);
 
   // Consolidate profile data
   const profileData = displayUser

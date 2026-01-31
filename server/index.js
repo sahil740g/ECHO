@@ -27,13 +27,10 @@ io.on("connection", (socket) => {
     io.emit("users:online", Array.from(onlineUsers.values()));
   });
 
-  // Community Chat
+  // Community Chat - Relay message to all clients
   socket.on("community:message", (message) => {
-    io.emit("community:message", {
-      ...message,
-      id: `msg_${Date.now()}`,
-      timestamp: new Date().toISOString(),
-    });
+    // Server just relays; ID comes from Supabase
+    io.emit("community:message", message);
   });
 
   // Direct Messages - Join conversation room
@@ -41,12 +38,12 @@ io.on("connection", (socket) => {
     socket.join(`dm:${conversationId}`);
   });
 
-  // Direct Messages - Send message
+  // Direct Messages - Relay message to room
   socket.on("dm:message", ({ conversationId, message }) => {
+    // Server just relays; ID comes from Supabase
     io.to(`dm:${conversationId}`).emit("dm:message", {
-      ...message,
-      id: `msg_${Date.now()}`,
-      timestamp: new Date().toISOString(),
+      conversationId,
+      message,
     });
   });
 

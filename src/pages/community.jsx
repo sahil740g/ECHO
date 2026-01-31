@@ -53,6 +53,7 @@ export default function Community() {
 
       const transformed = data.map((msg) => ({
         id: msg.id,
+        senderId: msg.sender_id,
         user: msg.profiles?.name || "Anonymous",
         handle: msg.profiles?.handle || "@anonymous",
         avatar: msg.profiles?.avatar_url,
@@ -61,7 +62,6 @@ export default function Community() {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        isMe: msg.sender_id === user?.id,
       }));
 
       setMessages(transformed);
@@ -91,6 +91,7 @@ export default function Community() {
 
     const newMessage = {
       id: `temp_${Date.now()}`,
+      senderId: user.id,
       user: user.name || "Guest User",
       handle: user.handle || "@guest",
       avatar: user.avatar || user.avatar_url,
@@ -99,7 +100,6 @@ export default function Community() {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      isMe: true,
     };
 
     // Optimistic update
@@ -224,7 +224,7 @@ export default function Community() {
                       {!isSequence && (
                         <div className="flex items-baseline gap-2">
                           <span
-                            className={`font-semibold hover:underline cursor-pointer ${msg.isMe ? "text-blue-400" : "text-white"}`}
+                            className={`font-semibold hover:underline cursor-pointer ${msg.senderId === user?.id ? "text-blue-400" : "text-white"}`}
                           >
                             {msg.user}
                           </span>
