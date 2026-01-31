@@ -189,16 +189,37 @@ export const AuthProvider = ({ children }) => {
   const updateUser = async (userData) => {
     if (!user) return;
     try {
+      console.log("Updating user with data:", userData);
       let updates = { ...userData };
 
       // Handle Image Uploads
       if (updates.avatar && updates.avatar.startsWith("data:")) {
-        updates.avatar_url = await uploadImage(user.id, updates.avatar);
+        console.log("Uploading avatar...");
+        try {
+          updates.avatar_url = await uploadImage(user.id, updates.avatar);
+          console.log("Avatar uploaded successfully:", updates.avatar_url);
+        } catch (err) {
+          console.error("Failed to upload avatar:", err);
+          alert(
+            "Failed to upload avatar image. Please try a smaller image or different format.",
+          );
+          return;
+        }
         delete updates.avatar;
       }
 
       if (updates.coverImage && updates.coverImage.startsWith("data:")) {
-        updates.cover_url = await uploadImage(user.id, updates.coverImage);
+        console.log("Uploading cover image...");
+        try {
+          updates.cover_url = await uploadImage(user.id, updates.coverImage);
+          console.log("Cover image uploaded successfully:", updates.cover_url);
+        } catch (err) {
+          console.error("Failed to upload cover image:", err);
+          alert(
+            "Failed to upload cover image. Please try a smaller image or different format.",
+          );
+          return;
+        }
         delete updates.coverImage;
       }
 
@@ -216,9 +237,14 @@ export const AuthProvider = ({ children }) => {
         handle: updates.handle,
       };
 
+      console.log("Saving to Supabase profiles:", dbData);
+
       const { error } = await supabase.from("profiles").upsert(dbData);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase upsert error:", error);
+        throw error;
+      }
 
       // Update local state with the new URLs and data
       // We map avatar_url -> avatar and cover_url -> coverImage for the frontend apps usage if consistent
@@ -228,6 +254,8 @@ export const AuthProvider = ({ children }) => {
         avatar: updates.avatar_url || prev.avatar,
         coverImage: updates.cover_url || prev.coverImage,
       }));
+
+      alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating user:", error);
       alert(
