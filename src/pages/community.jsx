@@ -19,9 +19,14 @@ export default function Community() {
 
     // Listen for real-time messages via Socket.io
     socket.on("community:message", (data) => {
+      console.log("Community: Received socket message", data);
       // Avoid duplicates (we get our own message back too)
       setMessages((prev) => {
-        if (prev.find((m) => m.id === data.id)) return prev;
+        if (prev.find((m) => m.id === data.id)) {
+          console.log("Community: Ignoring duplicate message ID:", data.id);
+          return prev;
+        }
+        console.log("Community: Adding new message from socket");
         return [...prev, data];
       });
     });
@@ -35,17 +40,7 @@ export default function Community() {
     try {
       const { data, error } = await supabase
         .from("community_messages")
-        .select(
-          `
-                    *,
-                    profiles:sender_id (
-                        id,
-                        name,
-                        handle,
-                        avatar_url
-                    )
-                `,
-        )
+        .select("*, profiles:sender_id(id, name, handle, avatar_url)")
         .order("created_at", { ascending: true })
         .limit(100);
 
@@ -62,11 +57,13 @@ export default function Community() {
           hour: "2-digit",
           minute: "2-digit",
         }),
+        isMe: msg.sender_id === user?.id,
       }));
 
       setMessages(transformed);
     } catch (error) {
       console.error("Error fetching community messages:", error);
+      alert(`Error loading messages: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -89,6 +86,8 @@ export default function Community() {
     setShowEmojiPicker(false);
     if (!message.trim() || !user) return;
 
+    console.log("Community: Sending message...", { user: user.id, text: message });
+
     const newMessage = {
       id: `temp_${Date.now()}`,
       senderId: user.id,
@@ -108,6 +107,7 @@ export default function Community() {
 
     try {
       // Persist to Supabase
+      console.log("Community: Inserting to Supabase...");
       const { data, error } = await supabase
         .from("community_messages")
         .insert({
@@ -118,6 +118,7 @@ export default function Community() {
         .single();
 
       if (error) throw error;
+      console.log("Community: Insert success", data);
 
       // Update with real ID
       setMessages((prev) =>
@@ -125,8 +126,10 @@ export default function Community() {
       );
 
       // Broadcast via Socket.io for real-time delivery to others
+      console.log("Community: Emitting to socket...");
       socket.emit("community:message", {
         id: data.id,
+        senderId: user.id, // Added senderId
         user: user.name,
         handle: user.handle,
         avatar: user.avatar || user.avatar_url,
@@ -139,6 +142,7 @@ export default function Community() {
       });
     } catch (error) {
       console.error("Error sending message:", error);
+      alert(`Failed to send message: ${error.message}`);
       // Remove optimistic on error
       setMessages((prev) => prev.filter((m) => m.id !== newMessage.id));
     }
@@ -186,10 +190,10 @@ export default function Community() {
                   index > 0 &&
                   messages[index - 1].user === msg.user &&
                   new Date("1970/01/01 " + msg.time).getTime() -
-                    new Date(
-                      "1970/01/01 " + messages[index - 1].time,
-                    ).getTime() <
-                    5 * 60000;
+                  new Date(
+                    "1970/01/01 " + messages[index - 1].time,
+                  ).getTime() <
+                  5 * 60000;
 
                 return (
                   <div

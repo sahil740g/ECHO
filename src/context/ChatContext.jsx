@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useAuth } from "./authcontext";
 import { socket } from "../lib/socket";
@@ -17,6 +18,12 @@ export const ChatProvider = ({ children }) => {
   const [activeChatId, setActiveChatId] = useState(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [loading, setLoading] = useState(true);
+
+  // Keep a ref to chats for access inside callbacks
+  const chatsRef = useRef(chats);
+  useEffect(() => {
+    chatsRef.current = chats;
+  }, [chats]);
 
   // Fetch conversations from Supabase
   const fetchConversations = useCallback(async () => {
@@ -58,15 +65,63 @@ export const ChatProvider = ({ children }) => {
               handle,
               avatar_url
             )
+          ),
+          messages (
+            id,
+            text,
+            created_at
           )
         `,
         )
-        .in("id", conversationIds);
+        .in("id", conversationIds)
+        .order("created_at", { ascending: false }); // Fetch newest first
 
       if (convError) throw convError;
 
+      // Deduplicate chats based on participants AND merge
+      const uniqueChatsMap = new Map();
+
+      conversations.forEach((conv) => {
+        // Create a unique key based on sorted participant IDs
+        const participantKey = conv.conversation_participants
+          .map(p => p.user_id)
+          .sort()
+          .join(':');
+
+        if (!uniqueChatsMap.has(participantKey)) {
+          // Initialize with this conversation
+          uniqueChatsMap.set(participantKey, { ...conv, mergedIds: [conv.id] });
+        } else {
+          // Merge this conversation into existing one
+          const existing = uniqueChatsMap.get(participantKey);
+
+          if (!existing.mergedIds.includes(conv.id)) {
+            existing.mergedIds.push(conv.id);
+          }
+
+          // Use the ID of the chat that has messages, if any
+          const hasMessages = conv.messages && conv.messages.length > 0;
+          const existingHasMessages = existing.messages && existing.messages.length > 0;
+
+          if (hasMessages && !existingHasMessages) {
+            existing.id = conv.id;
+            existing.created_at = conv.created_at;
+          } else if (!hasMessages && existingHasMessages) {
+            // Keep existing ID
+          } else {
+            // Both have messages or neither? Use newest.
+            if (new Date(conv.created_at) > new Date(existing.created_at)) {
+              existing.id = conv.id;
+              existing.created_at = conv.created_at;
+            }
+          }
+        }
+      });
+
+      const uniqueConversations = Array.from(uniqueChatsMap.values());
+
       // Transform to frontend structure
-      const transformedChats = conversations.map((conv) => {
+      const transformedChats = uniqueConversations.map((conv) => {
         const otherParticipants = conv.conversation_participants
           .filter((p) => p.user_id !== user.id)
           .map((p) => ({
@@ -78,6 +133,7 @@ export const ChatProvider = ({ children }) => {
 
         return {
           id: conv.id,
+          originalIds: conv.mergedIds, // Store all IDs to fetch messages from
           participants: conv.conversation_participants.map((p) => p.user_id),
           participantProfiles: otherParticipants,
           messages: [], // Will be loaded when chat is selected
@@ -92,35 +148,66 @@ export const ChatProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Fetch messages for a specific conversation
+  // Fetch messages from ALL merged conversations
   const fetchMessages = useCallback(async (conversationId) => {
     try {
-      const { data, error } = await supabase
+      console.log(`Debug: Fetching messages for Chat ID: ${conversationId}`);
+
+      // 1. Resolve all Conversation IDs using the Ref
+      let targetIds = [conversationId];
+      const currentChat = chatsRef.current.find(c => c.id === conversationId);
+
+      if (currentChat && currentChat.originalIds) {
+        targetIds = currentChat.originalIds;
+        console.log(`Debug: Resolved Merged IDs: ${targetIds.join(', ')}`);
+      }
+
+      // 2. Fetch messages for ALL target IDs (using .in())
+      const { data: messagesData, error: msgError } = await supabase
         .from("messages")
-        .select(
-          `
-          *,
-          profiles:sender_id (
-            id,
-            name,
-            handle,
-            avatar_url
-          )
-        `,
-        )
-        .eq("conversation_id", conversationId)
+        .select("*")
+        .in("conversation_id", targetIds)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (msgError) {
+        console.error("Debug: Error fetching messages:", msgError);
+        throw msgError;
+      }
 
-      const messages = data.map((msg) => ({
-        id: msg.id,
-        senderId: msg.sender_id,
-        text: msg.text,
-        timestamp: msg.created_at,
-        senderName: msg.profiles?.name,
-        senderAvatar: msg.profiles?.avatar_url,
-      }));
+      console.log(`Debug: Found ${messagesData?.length || 0} messages total`);
+
+      if (!messagesData || messagesData.length === 0) {
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === conversationId ? { ...chat, messages: [] } : chat,
+          ),
+        );
+        return;
+      }
+
+      // 3. Fetch sender profiles manually
+      const senderIds = [...new Set(messagesData.map((m) => m.sender_id))];
+      const { data: profilesData, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, name, handle, avatar_url")
+        .in("id", senderIds);
+
+      if (profileError) console.error("Error fetching message profiles:", profileError);
+
+      const profilesMap = new Map((profilesData || []).map((p) => [p.id, p]));
+
+      // 4. Combine data
+      const messages = messagesData.map((msg) => {
+        const sender = profilesMap.get(msg.sender_id);
+        return {
+          id: msg.id,
+          senderId: msg.sender_id,
+          text: msg.text,
+          timestamp: msg.created_at,
+          senderName: sender?.name || "Unknown",
+          senderAvatar: sender?.avatar_url,
+        };
+      });
 
       setChats((prev) =>
         prev.map((chat) =>
@@ -224,11 +311,11 @@ export const ChatProvider = ({ children }) => {
         prev.map((chat) =>
           chat.id === chatId
             ? {
-                ...chat,
-                messages: chat.messages.map((m) =>
-                  m.id === tempId ? { ...m, id: data.id } : m,
-                ),
-              }
+              ...chat,
+              messages: chat.messages.map((m) =>
+                m.id === tempId ? { ...m, id: data.id } : m,
+              ),
+            }
             : chat,
         ),
       );
@@ -240,14 +327,15 @@ export const ChatProvider = ({ children }) => {
       });
     } catch (error) {
       console.error("Error sending message:", error);
+      alert(`Debug Error: ${error.message} (Code: ${error.code})`);
       // Revert on error
       setChats((prev) =>
         prev.map((chat) =>
           chat.id === chatId
             ? {
-                ...chat,
-                messages: chat.messages.filter((m) => m.id !== tempId),
-              }
+              ...chat,
+              messages: chat.messages.filter((m) => m.id !== tempId),
+            }
             : chat,
         ),
       );
@@ -304,13 +392,13 @@ export const ChatProvider = ({ children }) => {
         participants: [user.id, participantId],
         participantProfiles: participantProfile
           ? [
-              {
-                id: participantProfile.id,
-                name: participantProfile.name,
-                handle: participantProfile.handle,
-                avatar: participantProfile.avatar_url,
-              },
-            ]
+            {
+              id: participantProfile.id,
+              name: participantProfile.name,
+              handle: participantProfile.handle,
+              avatar: participantProfile.avatar_url,
+            },
+          ]
           : [],
         messages: [],
       };

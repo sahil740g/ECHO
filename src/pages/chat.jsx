@@ -6,7 +6,8 @@ import EmojiPicker from "emoji-picker-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 const Chat = () => {
-  const { chats, sendMessage } = useChat();
+  // Rename context's selectChat to avoid collision
+  const { chats, sendMessage, selectChat: setContextActiveChat } = useChat();
   const { user } = useAuth();
   const { chatId } = useParams();
   const [messageInput, setMessageInput] = useState("");
@@ -14,10 +15,17 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
+  // Sync URL param with Context State to trigger message fetching
+  useEffect(() => {
+    if (chatId) {
+      setContextActiveChat(chatId);
+    }
+  }, [chatId, setContextActiveChat]);
+
   const activeChatId = chatId;
   const activeChat = chats.find((c) => c.id === chatId);
 
-  const selectChat = (id) => {
+  const handleChatSelect = (id) => {
     if (id) {
       navigate(`/chat/${id}`);
     } else {
@@ -26,20 +34,16 @@ const Chat = () => {
   };
 
   // Helper to find the "other" participant in a chat
-  // Helper to find the "other" participant in a chat
   const getOtherParticipant = (chat) => {
     // If we have prepared profiles from context, use them
     if (chat.participantProfiles && chat.participantProfiles.length > 0) {
-      // In a query/DM, usually the first one that isn't me is the target
-      // The context already filters out the current user for participantProfiles (usually)
-      // But let's be safe: matches id != user.id if IDs are present
       const other =
         chat.participantProfiles.find((p) => p.id !== user?.id) ||
         chat.participantProfiles[0];
       return other;
     }
 
-    // Fallback for legacy/mock data if needed (though context should provide profiles now)
+    // Fallback
     const participants = chat.participants || [];
     const otherId = participants.find((id) => id !== (user?.id || "curr_user"));
     return { name: "User", handle: otherId || "Unknown", avatar: null };
@@ -73,8 +77,9 @@ const Chat = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] md:h-screen bg-black text-white overflow-hidden">
-      {/* Contact List - Hidden on mobile if chat is active */}
+    // FIX: height calculation to prevent input from being pushed off-screen
+    <div className="flex h-[calc(100vh-4rem)] bg-black text-white overflow-hidden">
+      {/* Contact List */}
       <div
         className={`w-full md:w-1/3 lg:w-1/4 border-r border-[#2F3336] flex flex-col ${activeChatId ? "hidden md:flex" : "flex"}`}
       >
@@ -95,11 +100,14 @@ const Chat = () => {
         <div className="flex-1 overflow-y-auto">
           {chats.map((chat) => {
             const otherUser = getOtherParticipant(chat);
-            const lastMessage = chat.messages[chat.messages.length - 1];
+            const lastMessage = chat.messages && chat.messages.length > 0
+              ? chat.messages[chat.messages.length - 1]
+              : null;
+
             return (
               <div
                 key={chat.id}
-                onClick={() => selectChat(chat.id)}
+                onClick={() => handleChatSelect(chat.id)}
                 className={`flex items-center p-4 hover:bg-[#16181C] cursor-pointer transition-colors ${activeChatId === chat.id ? "bg-[#16181C] border-r-2 border-blue-500" : ""}`}
               >
                 <div className="w-10 h-10 rounded-full bg-gray-600 overflow-hidden shrink-0 mr-3">
@@ -141,16 +149,16 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Chat Window - Hidden on mobile if no chat is active */}
+      {/* Chat Window */}
       <div
         className={`w-full md:w-2/3 lg:w-3/4 flex flex-col ${!activeChatId ? "hidden md:flex" : "flex"}`}
       >
-        {activeChatId ? (
+        {activeChatId && activeChat ? (
           <>
             <div className="px-4 py-3 border-b border-[#2F3336] flex items-center justify-between backdrop-blur-md bg-black/80 sticky top-0 z-10">
               <div className="flex items-center">
                 <button
-                  onClick={() => selectChat(null)}
+                  onClick={() => handleChatSelect(null)}
                   className="md:hidden mr-3 text-white"
                 >
                   <ArrowLeft size={24} />
@@ -184,19 +192,19 @@ const Chat = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {activeChat.messages.map((msg, index) => {
+              {activeChat.messages && activeChat.messages.map((msg, index) => {
                 const isMe = msg.senderId === (user?.id || "curr_user");
                 return (
+                  // FIX: w-full required for flex justify to work if parent is flex col default? No, just safe.
                   <div
                     key={msg.id || index}
-                    className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                    className={`w-full flex ${isMe ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${
-                        isMe
-                          ? "bg-blue-500 text-white rounded-br-none"
-                          : "bg-[#2F3336] text-white rounded-bl-none"
-                      }`}
+                      className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMe
+                        ? "bg-blue-500 text-white rounded-br-none"
+                        : "bg-[#2F3336] text-white rounded-bl-none"
+                        }`}
                     >
                       <p>{msg.text}</p>
                       <p

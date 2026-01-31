@@ -24,41 +24,48 @@ export const NotificationProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data: notificationsData, error } = await supabase
         .from("notifications")
-        .select(
-          `
-                    *,
-                    actor:actor_id (
-                        id,
-                        name,
-                        handle,
-                        avatar_url
-                    ),
-                    post:post_id (
-                        id,
-                        description
-                    )
-                `,
-        )
+        .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
 
-      const transformed = data.map((n) => ({
-        id: n.id,
-        user: n.actor?.name || "Someone",
-        avatar:
-          n.actor?.avatar_url ||
-          `https://ui-avatars.com/api/?name=${n.actor?.name || "U"}&background=random`,
-        type: n.type,
-        text: getNotificationText(n),
-        time: formatTimeAgo(n.created_at),
-        read: n.read,
-        postId: n.post_id,
-      }));
+      // Manually fetch related data (actors and posts) to avoid FK issues
+      const actorIds = [...new Set(notificationsData.map(n => n.actor_id).filter(Boolean))];
+      const postIds = [...new Set(notificationsData.map(n => n.post_id).filter(Boolean))];
+
+      const [actorsRes, postsRes] = await Promise.all([
+        actorIds.length > 0
+          ? supabase.from("profiles").select("id, name, handle, avatar_url").in("id", actorIds)
+          : { data: [] },
+        postIds.length > 0
+          ? supabase.from("posts").select("id, description").in("id", postIds)
+          : { data: [] }
+      ]);
+
+      const actorsMap = new Map((actorsRes.data || []).map(a => [a.id, a]));
+      const postsMap = new Map((postsRes.data || []).map(p => [p.id, p]));
+
+      const transformed = notificationsData.map((n) => {
+        const actor = actorsMap.get(n.actor_id);
+        const post = postsMap.get(n.post_id);
+
+        return {
+          id: n.id,
+          user: actor?.name || "Someone",
+          avatar:
+            actor?.avatar_url ||
+            `https://ui-avatars.com/api/?name=${actor?.name || "U"}&background=random`,
+          type: n.type,
+          text: getNotificationText(n),
+          time: formatTimeAgo(n.created_at),
+          read: n.read,
+          postId: n.post_id,
+        };
+      });
 
       setNotifications(transformed);
     } catch (error) {

@@ -126,90 +126,90 @@ function Profile() {
   const userPosts =
     displayUser && safeHandle && posts
       ? posts.filter((post) => {
-          return post.handle && post.handle.toLowerCase() === safeHandle;
-        })
+        return post.handle && post.handle.toLowerCase() === safeHandle;
+      })
       : [];
 
   const taggedPosts =
     displayUser && safeHandle && posts
       ? posts.filter((post) => {
-          try {
-            // Check description
-            if (
-              post.description &&
-              typeof post.description === "string" &&
-              post.description.toLowerCase().includes(safeHandle)
-            )
-              return true;
+        try {
+          // Check description
+          if (
+            post.description &&
+            typeof post.description === "string" &&
+            post.description.toLowerCase().includes(safeHandle)
+          )
+            return true;
 
-            // Check comments
-            const postCommentsData = commentsData
-              ? commentsData[post.id]
-              : null;
-            if (postCommentsData && postCommentsData.comments) {
-              const checkComments = (comments) => {
-                for (const c of comments) {
-                  if (
-                    c.text &&
-                    typeof c.text === "string" &&
-                    c.text.toLowerCase().includes(safeHandle)
-                  )
-                    return true;
-                  if (c.replies && checkComments(c.replies)) return true;
-                }
-                return false;
-              };
-              if (checkComments(postCommentsData.comments)) return true;
-            }
-            return false;
-          } catch (e) {
-            console.error("Error in taggedPosts filter:", e, post);
-            return false;
+          // Check comments
+          const postCommentsData = commentsData
+            ? commentsData[post.id]
+            : null;
+          if (postCommentsData && postCommentsData.comments) {
+            const checkComments = (comments) => {
+              for (const c of comments) {
+                if (
+                  c.text &&
+                  typeof c.text === "string" &&
+                  c.text.toLowerCase().includes(safeHandle)
+                )
+                  return true;
+                if (c.replies && checkComments(c.replies)) return true;
+              }
+              return false;
+            };
+            if (checkComments(postCommentsData.comments)) return true;
           }
-        })
+          return false;
+        } catch (e) {
+          console.error("Error in taggedPosts filter:", e, post);
+          return false;
+        }
+      })
       : [];
 
   // Consolidate profile data
   const profileData = displayUser
     ? {
-        id: displayUser.id, // Ensure ID is passed
-        name: displayUser.name,
-        handle: displayUser.handle,
-        bio:
-          displayUser.bio ||
-          "Full Stack Developer 👨‍💻 | React, Node.js, Python | Building cool stuff 🚀 | Open Source Enthusiast",
-        location: displayUser.location || "Mumbai, India",
-        website: displayUser.website || "portfolio.dev",
-        avatar: displayUser.avatar || displayUser.avatar_url, // Handle both
-        coverImage:
-          displayUser.coverImage ||
-          displayUser.cover_url ||
-          "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80",
-        joinDate: displayUser.joinDate || "January 2024",
-        socials: displayUser.socials || {},
-        stats: displayUser.stats || {
-          followers: 0,
-          following: 0,
-          posts: userPosts.length,
+      id: displayUser.id, // Ensure ID is passed
+      name: displayUser.name,
+      handle: displayUser.handle,
+      bio:
+        displayUser.bio ||
+        "Full Stack Developer 👨‍💻 | React, Node.js, Python | Building cool stuff 🚀 | Open Source Enthusiast",
+      location: displayUser.location || "Mumbai, India",
+      website: displayUser.website || "portfolio.dev",
+      avatar: displayUser.avatar || displayUser.avatar_url, // Handle both
+      coverImage:
+        displayUser.coverImage ||
+        displayUser.cover_url ||
+        "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80",
+      joinDate: displayUser.joinDate || "January 2024",
+      socials: displayUser.socials || {},
+      stats: displayUser.stats || {
+        followers: 0,
+        following: 0,
+        posts: userPosts.length,
+      },
+      achievements: displayUser.achievements || [
+        {
+          icon: <Trophy className="text-yellow-500" size={20} />,
+          title: "Top Contributor",
+          desc: "Top 1% in Jan",
         },
-        achievements: displayUser.achievements || [
-          {
-            icon: <Trophy className="text-yellow-500" size={20} />,
-            title: "Top Contributor",
-            desc: "Top 1% in Jan",
-          },
-          {
-            icon: <Share2 className="text-blue-500" size={20} />,
-            title: "Viral Post",
-            desc: "Post reached 10k views",
-          },
-          {
-            icon: <Edit2 className="text-green-500" size={20} />,
-            title: "Writer",
-            desc: "Published 10+ articles",
-          },
-        ],
-      }
+        {
+          icon: <Share2 className="text-blue-500" size={20} />,
+          title: "Viral Post",
+          desc: "Post reached 10k views",
+        },
+        {
+          icon: <Edit2 className="text-green-500" size={20} />,
+          title: "Writer",
+          desc: "Published 10+ articles",
+        },
+      ],
+    }
     : null;
 
   console.log("Profile Data:", profileData);
@@ -309,6 +309,55 @@ function Profile() {
     );
   }
 
+  const handleShowUserList = async (type) => {
+    setUserListTitle(type === "followers" ? "Followers" : "Following");
+    setUserListUsers([]); // Clear previous list
+    setIsUserListModalOpen(true);
+
+    try {
+      const targetUserId = profileData.id;
+      let data;
+      let error;
+
+      if (type === "followers") {
+        // Fetch users who follow this profile
+        const response = await supabase
+          .from("follows")
+          .select("follower_id, profiles!follows_follower_id_fkey(*)")
+          .eq("following_id", targetUserId);
+
+        data = response.data;
+        error = response.error;
+      } else {
+        // Fetch users this profile follows
+        const response = await supabase
+          .from("follows")
+          .select("following_id, profiles!follows_following_id_fkey(*)")
+          .eq("follower_id", targetUserId);
+
+        data = response.data;
+        error = response.error;
+      }
+
+      if (error) throw error;
+
+      // Extract profiles from the response
+      // Structure is { profiles: { ... } }
+      const users = data.map(item => {
+        const p = item.profiles;
+        if (!p) return null;
+        return {
+          ...p,
+          avatar: p.avatar_url || p.avatar // Ensure avatar property exists
+        };
+      }).filter(Boolean);
+      setUserListUsers(users);
+
+    } catch (err) {
+      console.error(`Error fetching ${type}:`, err);
+    }
+  };
+
   if (!profileData) return null; // Loading or just fallback
 
   return (
@@ -374,15 +423,7 @@ function Profile() {
                     </div>
 
                     <button
-                      onClick={() => {
-                        setUserListTitle("Followers");
-                        // Function to get mock followers
-                        const followers = mockUsers.filter(
-                          (_, i) => i % 2 === 0,
-                        ); // Mock data: assume half of users follow
-                        setUserListUsers(followers);
-                        setIsUserListModalOpen(true);
-                      }}
+                      onClick={() => handleShowUserList("followers")}
                       className="text-zinc-300 hover:text-white transition cursor-pointer"
                     >
                       <span className="font-bold text-white">
@@ -394,22 +435,7 @@ function Profile() {
                     </button>
 
                     <button
-                      onClick={() => {
-                        setUserListTitle("Following");
-                        let followingUsers = [];
-                        if (isOwnProfile && user?.following) {
-                          followingUsers = mockUsers.filter((u) =>
-                            user.following.includes(u.handle),
-                          );
-                        } else {
-                          // Mock following for others
-                          followingUsers = mockUsers.filter(
-                            (_, i) => i % 3 === 0,
-                          );
-                        }
-                        setUserListUsers(followingUsers);
-                        setIsUserListModalOpen(true);
-                      }}
+                      onClick={() => handleShowUserList("following")}
                       className="text-zinc-300 hover:text-white transition cursor-pointer"
                     >
                       <span className="font-bold text-white">
@@ -436,11 +462,10 @@ function Profile() {
               {!isOwnProfile && (
                 <button
                   onClick={handleFollowToggle}
-                  className={`w-full md:w-auto px-6 py-2 text-sm font-medium rounded-md transition mt-4 md:mt-0 ${
-                    isFollowing
-                      ? "bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700"
-                      : "bg-white text-black hover:bg-zinc-200"
-                  }`}
+                  className={`w-full md:w-auto px-6 py-2 text-sm font-medium rounded-md transition mt-4 md:mt-0 ${isFollowing
+                    ? "bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700"
+                    : "bg-white text-black hover:bg-zinc-200"
+                    }`}
                 >
                   {isFollowing ? "Unfollow" : "Follow"}
                 </button>
@@ -494,9 +519,8 @@ function Profile() {
                 <div
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 cursor-pointer transition relative ${
-                    activeTab === tab ? "text-white" : "hover:text-zinc-300"
-                  }`}
+                  className={`py-4 cursor-pointer transition relative ${activeTab === tab ? "text-white" : "hover:text-zinc-300"
+                    }`}
                 >
                   {tab}
                   {activeTab === tab && (
