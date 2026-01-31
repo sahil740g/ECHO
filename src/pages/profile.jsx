@@ -24,6 +24,8 @@ import { useComments } from "../context/commentscontext";
 import PostCard from "../components/postcard/postcard";
 import { supabase } from "../lib/supabase";
 import { mockUsers } from "../data/mockUsers";
+import EditProfileModal from "../components/profile/editprofilemodal";
+import UserListModal from "../components/profile/userlistmodal";
 
 function Profile() {
   const { username } = useParams();
@@ -112,46 +114,74 @@ function Profile() {
     }
   }
 
+  console.log("Rendering Profile Component", {
+    username,
+    loadingProfile,
+    displayUser,
+  });
+
   const savedPostsIds = displayUser?.savedPosts || [];
-  const savedPosts = posts.filter((post) => savedPostsIds.includes(post.id));
+  const savedPosts = posts
+    ? posts.filter((post) => savedPostsIds.includes(post.id))
+    : [];
 
   const safeHandle = displayUser?.handle
     ? displayUser.handle.toLowerCase()
     : "";
+  console.log("Safe Handle:", safeHandle);
 
   const userPosts =
-    displayUser && safeHandle
-      ? posts.filter(
-          (post) => post.handle && post.handle.toLowerCase() === safeHandle,
-        )
-      : [];
-
-  const taggedPosts =
-    displayUser && safeHandle
+    displayUser && safeHandle && posts
       ? posts.filter((post) => {
-          // Check description
-          if (
-            post.description &&
-            post.description.toLowerCase().includes(safeHandle)
-          )
-            return true;
-
-          // Check comments
-          const postCommentsData = commentsData[post.id];
-          if (postCommentsData && postCommentsData.comments) {
-            const checkComments = (comments) => {
-              for (const c of comments) {
-                if (c.text && c.text.toLowerCase().includes(safeHandle))
-                  return true;
-                if (c.replies && checkComments(c.replies)) return true;
-              }
-              return false;
-            };
-            if (checkComments(postCommentsData.comments)) return true;
+          try {
+            return post.handle && post.handle.toLowerCase() === safeHandle;
+          } catch (e) {
+            console.error("Error in userPosts filter:", e, post);
+            return false;
           }
-          return false;
         })
       : [];
+  console.log("User Posts calculated:", userPosts.length);
+
+  const taggedPosts =
+    displayUser && safeHandle && posts
+      ? posts.filter((post) => {
+          try {
+            // Check description
+            if (
+              post.description &&
+              typeof post.description === "string" &&
+              post.description.toLowerCase().includes(safeHandle)
+            )
+              return true;
+
+            // Check comments
+            const postCommentsData = commentsData
+              ? commentsData[post.id]
+              : null;
+            if (postCommentsData && postCommentsData.comments) {
+              const checkComments = (comments) => {
+                for (const c of comments) {
+                  if (
+                    c.text &&
+                    typeof c.text === "string" &&
+                    c.text.toLowerCase().includes(safeHandle)
+                  )
+                    return true;
+                  if (c.replies && checkComments(c.replies)) return true;
+                }
+                return false;
+              };
+              if (checkComments(postCommentsData.comments)) return true;
+            }
+            return false;
+          } catch (e) {
+            console.error("Error in taggedPosts filter:", e, post);
+            return false;
+          }
+        })
+      : [];
+  console.log("Tagged Posts calculated:", taggedPosts.length);
 
   // Consolidate profile data
   const profileData = displayUser
