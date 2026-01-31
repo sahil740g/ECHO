@@ -144,6 +144,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const signUpWithEmail = async (email, password, name) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            user_name: email.split("@")[0],
+          },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error("Signup error:", error.message);
+      return { data: null, error };
+    }
+  };
+
+  const loginWithEmail = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error("Login error:", error.message);
+      return { data: null, error };
+    }
+  };
+
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -346,6 +381,8 @@ export const AuthProvider = ({ children }) => {
         user,
         loading,
         loginWithProvider,
+        signUpWithEmail,
+        loginWithEmail,
         logout,
         updateUser,
         toggleBookmark,

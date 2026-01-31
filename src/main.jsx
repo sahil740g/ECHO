@@ -6,16 +6,23 @@ import { BrowserRouter } from "react-router-dom";
 import { CommentsProvider } from "./context/commentscontext.jsx";
 import { PostsProvider } from "./context/postscontext.jsx";
 import { AuthProvider } from "./context/authcontext.jsx";
+import { NotificationProvider } from "./context/NotificationContext.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <CommentsProvider>
-          <PostsProvider>
-            <App />
-          </PostsProvider>
-        </CommentsProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <NotificationProvider>
+            <CommentsProvider>
+              <PostsProvider>
+                <App />
+              </PostsProvider>
+            </CommentsProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
