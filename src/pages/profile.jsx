@@ -53,29 +53,32 @@ function Profile() {
   // Fetch user profile if username param exists
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!username) return;
+      // Determine target handle to fetch
+      const targetHandle = username || (user?.handle ? user.handle.replace("@", "") : null);
 
-      const myHandleNoAt = user?.handle?.replace("@", "");
-      if (myHandleNoAt === username) {
-        return;
-      }
+      if (!targetHandle) return;
+
+      // REMOVED: Early return for own profile to ensure we fetch fresh stats
+      // if (myHandleNoAt === username) { return; }
 
       setLoadingProfile(true);
       try {
         let profile = null;
+        // Check if it's an email-based handle or username
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
-          .ilike("handle", `@${username}`)
+          .ilike("handle", `@${targetHandle}`)
           .single();
 
         if (data) {
           profile = data;
         } else {
+          // Fallback search without @
           const { data: data2 } = await supabase
             .from("profiles")
             .select("*")
-            .ilike("handle", username)
+            .ilike("handle", targetHandle)
             .single();
           if (data2) profile = data2;
         }
@@ -237,9 +240,15 @@ function Profile() {
         "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200&q=80",
       joinDate: displayUser.joinDate || "January 2024",
       socials: displayUser.socials || {},
+
       stats: {
-        followers: displayUser.stats?.followers || 0,
-        following: displayUser.stats?.following || (Array.isArray(displayUser.following) ? displayUser.following.length : 0),
+        // Prefer fetched stats (which are real-time from DB) over auth context stats
+        followers: (() => {
+          const val = fetchedUser?.stats?.followers ?? displayUser.stats?.followers ?? 0;
+          // console.log("Stats debug:", { fetched: fetchedUser?.stats?.followers, display: displayUser.stats?.followers, result: val });
+          return val;
+        })(),
+        following: fetchedUser?.stats?.following ?? displayUser.stats?.following ?? (Array.isArray(displayUser.following) ? displayUser.following.length : 0),
         posts: userPosts.length,
       },
       achievements: displayUser.achievements || [
@@ -486,26 +495,14 @@ function Profile() {
                     >
                       <span className="font-bold text-white">
                         {(() => {
-                          if (isOwnProfile) return (user?.followers?.length || 0); // Need followers in auth user? Or just fetch? Auth user usually just has following. 
-                          // Actually AuthContext doesn't fetch followers count for 'me'. 
-                          // But usually Profile component handles 'me' differently.
-                          // If isOwnProfile, we might rely on profileData.stats if we fetched it? 
-                          // But for own profile we skip fetchUserProfile. 
-                          // Let's assume for own profile we might need to fix it too, but user reported "following another user".
-
-                          if (isOwnProfile) return 0; // Placeholder if we don't have my followers count
-
                           const baseCount = profileData.stats?.followers || 0;
+
+                          // If it's my own profile, just show the count (I can't follow/unfollow myself here)
+                          if (isOwnProfile) return baseCount;
+
                           const wasFollowing = displayUser?.serverIsFollowing;
 
-                          // If I was following on server, baseCount includes me.
-                          // If I am now following (isFollowing), count is baseCount.
-                          // If I am NOT following, count is baseCount - 1.
-
-                          // If I was NOT following on server, baseCount mentions me NOT.
-                          // If I am now following, count is baseCount + 1.
-                          // If I am NOT following, count is baseCount.
-
+                          // Optimistic update logic for other profiles
                           let displayed = baseCount;
                           if (wasFollowing) {
                             if (!isFollowing) displayed -= 1;

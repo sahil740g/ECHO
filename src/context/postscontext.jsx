@@ -18,7 +18,12 @@ export function PostsProvider({ children }) {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      // Create a promise that rejects after 5 seconds to prevent hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out")), 5000)
+      );
+
+      const fetchPromise = supabase
         .from("posts")
         .select(
           `
@@ -28,12 +33,30 @@ export function PostsProvider({ children }) {
                         name,
                         handle,
                         avatar_url
-                    )
+                    ),
+                    comments (count)
                 `,
         )
         .order("created_at", { ascending: false });
 
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
       if (error) throw error;
+
+      // Fetch user's votes if logged in
+      let userVotesMap = {};
+      if (user) {
+        const { data: votesData } = await supabase
+          .from("votes")
+          .select("post_id, vote_type")
+          .eq("user_id", user.id);
+
+        if (votesData) {
+          votesData.forEach(v => {
+            userVotesMap[v.post_id] = v.vote_type;
+          });
+        }
+      }
 
       // Transform data to match frontend structure
       const transformedPosts = data.map((post) => ({
@@ -47,10 +70,10 @@ export function PostsProvider({ children }) {
         title: post.title,
         description: post.description,
         tags: post.tags || [],
-        commentsCount: 0, // Will be updated when comments are fetched
+        commentsCount: post.comments?.[0]?.count || 0, // Extract count from response
         codeSnippet: post.code_snippet,
         type: post.type || "post",
-        userVote: null, // Will be set based on user's votes
+        userVote: userVotesMap[post.id] || null, // Set correct user vote
       }));
 
       setPosts(transformedPosts);
@@ -61,6 +84,8 @@ export function PostsProvider({ children }) {
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
+      // Ensure we don't leave the user with nothing if it was just a timeout
+      // setPosts([]); // Optional: clear posts or keep empty
     } finally {
       setLoading(false);
     }
@@ -184,8 +209,8 @@ export function PostsProvider({ children }) {
             newUserVote = type;
           }
 
-          // Clamp removed as per user request to allow negative votes
-          // newVoteCount = Math.max(0, newVoteCount);
+          // Clamp vote count to 0 to ensure no negative numbers are stored or displayed
+          newVoteCount = Math.max(0, newVoteCount);
 
           finalVoteCount = newVoteCount; // Capture for server update
           return { ...post, votes: newVoteCount, userVote: newUserVote };

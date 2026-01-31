@@ -25,14 +25,14 @@ function PostCard({
   tags = ["WebSockets", "JavaScript"],
   avatar,
 
-  commentsCount: initialCommentsCount = 15, // Rename prop to avoid conflict/confusion
+  commentsCount: initialCommentsCount = 15,
   codeSnippet = null,
   language = "javascript",
   image = null,
 }) {
   const { votePost } = usePosts();
   const { getCommentCount } = useComments();
-  const { user, toggleBookmark } = useAuth();
+  const { user, toggleBookmark, openLoginModal } = useAuth();
   const [showCode, setShowCode] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -41,13 +41,32 @@ function PostCard({
   const isBookmarked = user?.savedPosts?.includes(id);
 
   // Derived state for display
-  const voteCount = votes;
+  // Visually clamp to 0 (never show negative), but receive true value for logic consistency
+  const voteCount = Math.max(0, votes);
   const userVote = propsUserVote;
 
-  // Get real comment count from context, fallback to prop if not found (or if 0 and maybe prop has value? context implies source of truth though)
+  // Get real comment count from context
   const realCommentCount = getCommentCount(id);
   const displayCommentsCount =
     realCommentCount > 0 ? realCommentCount : initialCommentsCount;
+
+  const handleVote = (e, type) => {
+    e.stopPropagation();
+    if (!user) {
+      openLoginModal();
+      return;
+    }
+    votePost(id, type);
+  };
+
+  const handleBookmark = (e) => {
+    e.stopPropagation();
+    if (!user) {
+      openLoginModal();
+      return;
+    }
+    toggleBookmark(id);
+  };
 
   const handleCopy = async () => {
     try {
@@ -77,7 +96,7 @@ function PostCard({
       <div className="flex gap-3 md:gap-4 h-full">
         <div className="flex flex-col items-center gap-2 w-10 md:w-12 flex-shrink-0">
           <button
-            onClick={() => votePost(id, "up")}
+            onClick={(e) => handleVote(e, "up")}
             className={`p-2 rounded-lg transition ${userVote === "up" ? "text-blue-500 bg-blue-500/10" : "text-zinc-400 hover:text-blue-400 hover:bg-white/5"}`}
           >
             <ThumbsUp size={20} />
@@ -88,7 +107,7 @@ function PostCard({
             {voteCount}
           </span>
           <button
-            onClick={() => votePost(id, "down")}
+            onClick={(e) => handleVote(e, "down")}
             className={`p-2 rounded-lg transition ${userVote === "down" ? "text-red-500 bg-red-500/10" : "text-zinc-400 hover:text-red-400 hover:bg-white/5"}`}
           >
             <ThumbsDown size={20} />
@@ -201,7 +220,7 @@ function PostCard({
                 <span className="sm:hidden">{displayCommentsCount}</span>
               </button>
               <button
-                onClick={() => toggleBookmark(id)}
+                onClick={handleBookmark}
                 className={`flex items-center gap-2 transition py-1 ${isBookmarked ? "text-yellow-500" : "hover:text-white"}`}
               >
                 <Bookmark
