@@ -2,6 +2,21 @@
 
 ECHO is a modern, developer-focused social platform designed for sharing knowledge, code snippets, and tech discussions.
 
+## Project Structure
+
+```
+ECHO/
+├── frontend/          # React/Vite application
+│   ├── src/           # Source code
+│   ├── public/        # Static assets
+│   └── ...
+├── backend/           # Node.js/Express/Socket.io server
+│   ├── index.js       # Server entry point
+│   └── ...
+├── supabase/          # Database migrations
+└── .env               # Environment variables (template)
+```
+
 ## Tech Stack
 
 - **Frontend**: React, Vite, TailwindCSS
@@ -19,21 +34,25 @@ ECHO is a modern, developer-focused social platform designed for sharing knowled
 
    ```bash
    # Frontend
+   cd frontend
    npm install
 
    # Backend
-   cd server
+   cd ../backend
    npm install
    ```
 
 2. **Environment Variables**
-   - Create `.env` in the root directory:
+   
+   Copy `.env` to both `frontend/` and `backend/` directories, or they're already set up.
+   
+   - **Frontend** (`frontend/.env`):
      ```
      VITE_SUPABASE_URL=...
      VITE_SUPABASE_ANON_KEY=...
      VITE_SOCKET_URL=http://localhost:3001
      ```
-   - Create `.env` in `server/` directory:
+   - **Backend** (`backend/.env`):
      ```
      PORT=3001
      CLIENT_URL=http://localhost:5173
@@ -46,6 +65,7 @@ Run the frontend and backend in **two separate terminals**.
 ### 1. Frontend
 
 ```bash
+cd frontend
 npm run dev
 ```
 
@@ -54,8 +74,17 @@ Runs on: http://localhost:5173
 ### 2. Backend
 
 ```bash
-cd server
-npm run dev
+cd backend
+npm start
 ```
 
 Runs on: http://localhost:3001
+
+## Build for Production
+
+```bash
+cd frontend
+npm run build
+```
+
+The production build will be in `frontend/dist/`.
