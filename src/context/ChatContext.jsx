@@ -151,15 +151,12 @@ export const ChatProvider = ({ children }) => {
   // Fetch messages from ALL merged conversations
   const fetchMessages = useCallback(async (conversationId) => {
     try {
-      console.log(`Debug: Fetching messages for Chat ID: ${conversationId}`);
-
       // 1. Resolve all Conversation IDs using the Ref
       let targetIds = [conversationId];
       const currentChat = chatsRef.current.find(c => c.id === conversationId);
 
       if (currentChat && currentChat.originalIds) {
         targetIds = currentChat.originalIds;
-        console.log(`Debug: Resolved Merged IDs: ${targetIds.join(', ')}`);
       }
 
       // 2. Fetch messages for ALL target IDs (using .in())
@@ -170,11 +167,8 @@ export const ChatProvider = ({ children }) => {
         .order("created_at", { ascending: true });
 
       if (msgError) {
-        console.error("Debug: Error fetching messages:", msgError);
         throw msgError;
       }
-
-      console.log(`Debug: Found ${messagesData?.length || 0} messages total`);
 
       if (!messagesData || messagesData.length === 0) {
         setChats((prev) =>
@@ -228,16 +222,13 @@ export const ChatProvider = ({ children }) => {
 
     function onConnect() {
       setIsConnected(true);
-      console.log("Socket connected");
     }
 
     function onDisconnect() {
       setIsConnected(false);
-      console.log("Socket disconnected");
     }
 
     function onDmMessage(data) {
-      console.log("Received DM:", data);
       // Add message to the appropriate conversation
       setChats((prev) =>
         prev.map((chat) =>

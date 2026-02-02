@@ -270,7 +270,10 @@ const Chat = () => {
               Choose from your existing conversations, start a new one, or just
               get swiping.
             </p>
-            <button className="mt-6 px-6 py-3 bg-blue-500 text-white font-bold rounded-full hover:bg-blue-600 transition-colors">
+            <button
+              onClick={() => navigate("/search")}
+              className="mt-6 px-6 py-3 bg-blue-500 text-white font-bold rounded-full hover:bg-blue-600 transition-colors"
+            >
               New Message
             </button>
           </div>

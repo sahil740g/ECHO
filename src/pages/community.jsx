@@ -19,20 +19,23 @@ export default function Community() {
 
     // Listen for real-time messages via Socket.io
     socket.on("community:message", (data) => {
-      console.log("Community: Received socket message", data);
       // Avoid duplicates (we get our own message back too)
       setMessages((prev) => {
         if (prev.find((m) => m.id === data.id)) {
-          console.log("Community: Ignoring duplicate message ID:", data.id);
           return prev;
         }
-        console.log("Community: Adding new message from socket");
         return [...prev, data];
       });
     });
 
+    // Handle socket connection errors
+    socket.on("connect_error", (error) => {
+      console.error("Community: Socket connection error:", error.message);
+    });
+
     return () => {
       socket.off("community:message");
+      socket.off("connect_error");
     };
   }, []);
 
@@ -86,8 +89,6 @@ export default function Community() {
     setShowEmojiPicker(false);
     if (!message.trim() || !user) return;
 
-    console.log("Community: Sending message...", { user: user.id, text: message });
-
     const newMessage = {
       id: `temp_${Date.now()}`,
       senderId: user.id,
@@ -107,7 +108,6 @@ export default function Community() {
 
     try {
       // Persist to Supabase
-      console.log("Community: Inserting to Supabase...");
       const { data, error } = await supabase
         .from("community_messages")
         .insert({
@@ -118,7 +118,6 @@ export default function Community() {
         .single();
 
       if (error) throw error;
-      console.log("Community: Insert success", data);
 
       // Update with real ID
       setMessages((prev) =>
@@ -126,7 +125,6 @@ export default function Community() {
       );
 
       // Broadcast via Socket.io for real-time delivery to others
-      console.log("Community: Emitting to socket...");
       socket.emit("community:message", {
         id: data.id,
         senderId: user.id, // Added senderId

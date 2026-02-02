@@ -228,11 +228,9 @@ function Profile() {
       id: displayUser.id, // Ensure ID is passed
       name: displayUser.name,
       handle: displayUser.handle,
-      bio:
-        displayUser.bio ||
-        "Full Stack Developer 👨‍💻 | React, Node.js, Python | Building cool stuff 🚀 | Open Source Enthusiast",
-      location: displayUser.location || "Mumbai, India",
-      website: displayUser.website || "portfolio.dev",
+      bio: displayUser.bio || "",
+      location: displayUser.location || "",
+      website: displayUser.website || "",
       avatar: displayUser.avatar || displayUser.avatar_url, // Handle both
       coverImage:
         displayUser.coverImage ||
@@ -270,9 +268,6 @@ function Profile() {
       ],
     }
     : null;
-
-  console.log("Profile Data:", profileData);
-  console.log("Display User:", displayUser);
 
   const handleSaveProfile = (updatedData) => {
     updateUser(updatedData);
@@ -331,16 +326,6 @@ function Profile() {
   }, [user, displayUser]);
 
   const [activeTab, setActiveTab] = React.useState("posts");
-
-  // Mock posts data
-  const mockPosts = Array(6)
-    .fill(null)
-    .map((_, i) => ({
-      id: i,
-      image: `https://picsum.photos/seed/${i + 10}/400/400`,
-      likes: 120 + i * 5,
-      comments: 20 + i,
-    }));
 
   useEffect(() => {
     // Only redirect if visiting /profile (own profile) and not logged in
@@ -566,29 +551,35 @@ function Profile() {
             </div>
 
             <div className="mt-8">
-              <p className="text-zinc-300 leading-relaxed max-w-lg">
-                {profileData.bio}
-              </p>
+              {profileData.bio && (
+                <p className="text-zinc-300 leading-relaxed max-w-lg">
+                  {profileData.bio}
+                </p>
+              )}
               <div className="flex gap-6 mt-4 text-sm text-zinc-500">
-                <div className="flex items-center gap-2">
-                  <MapPin size={14} />
-                  {profileData.location}
-                </div>
-                <div className="flex items-center gap-2">
-                  <LinkIcon size={14} />
-                  <a
-                    href={
-                      profileData.website.startsWith("http")
-                        ? profileData.website
-                        : `https://${profileData.website}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-white transition"
-                  >
-                    {profileData.website}
-                  </a>
-                </div>
+                {profileData.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin size={14} />
+                    {profileData.location}
+                  </div>
+                )}
+                {profileData.website && (
+                  <div className="flex items-center gap-2">
+                    <LinkIcon size={14} />
+                    <a
+                      href={
+                        profileData.website.startsWith("http")
+                          ? profileData.website
+                          : `https://${profileData.website}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition"
+                    >
+                      {profileData.website}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </div>

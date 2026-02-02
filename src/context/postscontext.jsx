@@ -77,11 +77,7 @@ export function PostsProvider({ children }) {
       }));
 
       setPosts(transformedPosts);
-
-      // Fetch user's votes if logged in
-      if (user) {
-        await fetchUserVotes(transformedPosts);
-      }
+      // Note: User votes are already mapped above in lines 48-58, no need to fetch again
     } catch (error) {
       console.error("Error fetching posts:", error);
       // Ensure we don't leave the user with nothing if it was just a timeout
@@ -189,14 +185,19 @@ export function PostsProvider({ children }) {
       return;
     }
 
+    // IMPORTANT: Capture current state BEFORE optimistic update to avoid stale closure
+    const post = posts.find((p) => p.id === postId);
+    const currentVote = post?.userVote;
+    const currentAuthorId = post?.authorId;
+
     // Optimistic update
     let finalVoteCount = 0; // To capture the calculated value
 
     setPosts((prevPosts) =>
-      prevPosts.map((post) => {
-        if (post.id === postId) {
-          let newVoteCount = post.votes;
-          let newUserVote = post.userVote;
+      prevPosts.map((p) => {
+        if (p.id === postId) {
+          let newVoteCount = p.votes;
+          let newUserVote = p.userVote;
 
           if (newUserVote === type) {
             newVoteCount = type === "up" ? newVoteCount - 1 : newVoteCount + 1;
@@ -213,15 +214,13 @@ export function PostsProvider({ children }) {
           newVoteCount = Math.max(0, newVoteCount);
 
           finalVoteCount = newVoteCount; // Capture for server update
-          return { ...post, votes: newVoteCount, userVote: newUserVote };
+          return { ...p, votes: newVoteCount, userVote: newUserVote };
         }
-        return post;
+        return p;
       }),
     );
 
     try {
-      const post = posts.find((p) => p.id === postId);
-      const currentVote = post?.userVote;
 
       if (currentVote === type) {
         // Remove vote
@@ -248,10 +247,10 @@ export function PostsProvider({ children }) {
       // We rely on finalVoteCount which was captured from the robust prevPosts logic
       await supabase.from("posts").update({ votes: finalVoteCount }).eq("id", postId);
 
-      // Notification for Like
-      if (type === "up" && (!currentVote || currentVote !== "up") && user.id !== post.authorId) {
+      // Notification for Like (using captured currentAuthorId to avoid stale closure)
+      if (type === "up" && (!currentVote || currentVote !== "up") && user.id !== currentAuthorId) {
         createNotification({
-          userId: post.authorId,
+          userId: currentAuthorId,
           type: "like",
           actorId: user.id,
           postId: postId

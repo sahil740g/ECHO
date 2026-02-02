@@ -42,9 +42,9 @@ const SearchResults = () => {
 
   const filteredPosts = posts.filter(
     (post) =>
-      post.title.toLowerCase().includes(query) ||
-      post.description.toLowerCase().includes(query) ||
-      post.tags.some((tag) => tag.toLowerCase().includes(query)),
+      (post.title || "").toLowerCase().includes(query) ||
+      (post.description || "").toLowerCase().includes(query) ||
+      (post.tags || []).some((tag) => tag.toLowerCase().includes(query)),
   );
 
   return (

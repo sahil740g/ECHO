@@ -16,9 +16,10 @@ export function CommentsProvider({ children }) {
   const [loadingPosts, setLoadingPosts] = useState({});
 
   // Fetch comments for a specific post
+  // forceRefresh bypasses the loading check to handle cases where navigation interrupted a fetch
   const fetchComments = useCallback(
-    async (postId) => {
-      if (loadingPosts[postId]) return;
+    async (postId, forceRefresh = false) => {
+      if (loadingPosts[postId] && !forceRefresh) return;
 
       setLoadingPosts((prev) => ({ ...prev, [postId]: true }));
 
@@ -105,6 +106,7 @@ export function CommentsProvider({ children }) {
       language,
       user: user.name,
       avatar: user.avatar || user.avatar_url,
+      authorId: user.id, // Added: maintain consistency with real comment structure
       time: "just now",
       likes: 0,
       dislikes: 0,
@@ -216,6 +218,7 @@ export function CommentsProvider({ children }) {
       language,
       user: user.name,
       avatar: user.avatar || user.avatar_url,
+      authorId: user.id, // Added: maintain consistency with real comment structure
       time: "just now",
       likes: 0,
       dislikes: 0,
