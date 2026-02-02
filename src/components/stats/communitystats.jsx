@@ -5,19 +5,11 @@ import { usePosts } from '../../context/postscontext';
 const CommunityStats = () => {
     const context = usePosts();
 
-    if (!context || !context.getCommunityStats) {
-        return null; // Fail silently if context is missing to prevent crashes
+    if (!context || !context.stats) {
+        return null; // Fail silently if context is missing
     }
 
-    const { getCommunityStats } = context;
-
-    let stats;
-    try {
-        stats = getCommunityStats();
-    } catch (error) {
-        console.error("CommunityStats Error:", error);
-        return null;
-    }
+    const { stats } = context;
 
     if (!stats) return null;
 
