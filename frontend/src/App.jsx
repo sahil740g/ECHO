@@ -34,7 +34,7 @@ function App() {
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className={`pt-16 pl-0 md:pl-52 min-h-screen w-full ${location.pathname.startsWith('/chat/') ? 'pb-0' : 'pb-20 md:pb-0'}`}>
+        <main className={`pt-16 pl-0 md:pl-52 min-h-dvh w-full ${location.pathname.startsWith('/chat/') ? 'pb-0' : 'pb-20 md:pb-0'}`}>
           <Routes>
             <Route path="/" element={<Navigate to="/feed" />} />
             <Route path="/post/:postId" element={<PostDetails />} />

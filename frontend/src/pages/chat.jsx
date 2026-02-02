@@ -78,7 +78,7 @@ const Chat = () => {
 
   return (
     // FIX: height calculation to prevent input from being pushed off-screen
-    <div className="flex h-[calc(100vh-4rem)] bg-black text-white overflow-hidden">
+    <div className="flex h-[calc(100dvh-4rem)] bg-black text-white overflow-hidden">
       {/* Contact List */}
       <div
         className={`w-full md:w-1/3 lg:w-1/4 border-r border-[#2F3336] flex flex-col ${activeChatId ? "hidden md:flex" : "flex"}`}
