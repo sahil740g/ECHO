@@ -3,9 +3,17 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import "dotenv/config";
+import jwt from "jsonwebtoken";
+import { createClient } from "@supabase/supabase-js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
+app.use(express.json());
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -13,6 +21,76 @@ const io = new Server(httpServer, {
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
   },
+});
+
+// Authentication Endpoint
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  try {
+    // 1. Verify credentials with Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(401).json({ error: error.message });
+    }
+
+    if (!data.user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    // 2. Generate Custom JWT
+    const token = jwt.sign(
+      { userId: data.user.id, email: data.user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 3. Return Token and User Info
+    return res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        metadata: data.user.user_metadata,
+      },
+    });
+
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Authentication Middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: "Authentication token required" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+    req.user = user; // user = { userId, email, iat, exp }
+    next();
+  });
+};
+
+// Protected Route Example: Verify Token
+app.get("/verify", authenticateToken, (req, res) => {
+  res.json({ message: "Token is valid", user: req.user });
 });
 
 // Track online users

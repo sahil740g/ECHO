@@ -1,40 +1,87 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 const AuthContext = createContext({});
+const API_URL = import.meta.env.VITE_SOCKET_URL ? import.meta.env.VITE_SOCKET_URL.replace('wss://', 'https://').replace('ws://', 'http://') : "http://localhost:3001";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const openLoginModal = () => setIsLoginModalOpen(true);
   const closeLoginModal = () => setIsLoginModalOpen(false);
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserData(session.user);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
+    const checkUserSession = async () => {
+      const token = localStorage.getItem("token");
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        await fetchUserData(session.user);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
+      if (token) {
+        try {
+          const decoded = jwtDecode(token);
+          const currentTime = Date.now() / 1000;
 
-    return () => subscription.unsubscribe();
+          if (decoded.exp < currentTime) {
+            console.warn("Token expired, clearing session");
+            localStorage.removeItem("token");
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+
+          // Verify token with backend
+          const { data } = await axios.get(`${API_URL}/verify`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (data.user) {
+            console.log("Session verified via backend");
+            // Set global header for future requests
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            await fetchUserData(data.user);
+          } else {
+            throw new Error("No user data in verify response");
+          }
+        } catch (error) {
+          console.error("Session verification failed:", error);
+          localStorage.removeItem("token");
+          setUser(null);
+        }
+      } else {
+        // Fallback: Check Supabase session (legacy/optional)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await fetchUserData(session.user);
+        } else {
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkUserSession();
   }, []);
+
+  // ... fetchUserData is here (unchanged) ...
+
+  // Note: We need to keep this function inside the component scope or move it out if it doesn't use state. 
+  // But since I am editing the file content using replace, I will assume fetchUserData is preserved if I don't touch it. 
+  // Wait, I am NOT replacing fetchUserData. I'm selecting ranges.
+
+  // I will replace from start of file to line 37 (useEffect end) 
+  // AND `loginWithEmail` and `logout`.
+
+  // Actually, I can do this in one `replace_file_content` if I include `fetchUserData` in the replacement? 
+  // No, `fetchUserData` is large. I should use `multi_replace` or specific range.
+  // The tool `replace_file_content` replaces a SINGLE contiguous block.
+  // `loginWithEmail` and `logout` are further down. `useEffect` is at the top.
+  // I will use `replace_file_content` for `useEffect` first? Or `multi_replace`.
+  // I'll use `multi_replace_file_content` to be safe and precise.
+
 
   const fetchUserData = async (authUser) => {
     try {
@@ -167,23 +214,44 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithEmail = async (email, password) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Use backend for login
+      const { data } = await axios.post(`${API_URL}/login`, {
         email,
         password,
       });
-      if (error) throw error;
-      return { data, error: null };
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        // Set global header
+        axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+
+        // Use the user data from backend to fetch profile
+        if (data.user) {
+          await fetchUserData(data.user);
+        }
+        return { data: data.user, error: null };
+      } else {
+        throw new Error("No token returned from backend");
+      }
     } catch (error) {
-      console.error("Login error:", error.message);
-      return { data: null, error };
+      console.error("Login error:", error.response?.data?.error || error.message);
+      return { data: null, error: error.response?.data?.error || error.message };
     }
   };
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Clear local persistence
+      localStorage.removeItem("token");
+      delete axios.defaults.headers.common["Authorization"];
+
+      // Optional: Sign out from Supabase too (to clear implicit session)
+      await supabase.auth.signOut();
+
+      await supabase.auth.signOut();
+
       setUser(null);
+      navigate("/");
     } catch (error) {
       console.error("Logout error:", error.message);
     }
