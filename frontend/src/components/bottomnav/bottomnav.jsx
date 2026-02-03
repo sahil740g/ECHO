@@ -20,10 +20,17 @@ const BottomNav = () => {
         location.pathname === path || location.pathname.startsWith(path + '/')
     );
 
+    // Determine if we're on the Query page (for isQuery prop)
+    const isQueryPage = location.pathname === '/query' || location.pathname.startsWith('/query/');
+
     return (
         <>
             {showNewPostButton && (
-                <button onClick={() => setIsNewPostModalOpen(true)} className="fixed bottom-20 right-4 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg md:hidden z-50 hover:bg-blue-600 transition cursor-pointer">
+                <button
+                    onClick={() => setIsNewPostModalOpen(true)}
+                    className="fixed bottom-20 right-4 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg md:hidden z-50 hover:bg-blue-600 transition cursor-pointer"
+                    aria-label={isQueryPage ? "New Query" : "New Post"}
+                >
                     <Plus size={24} />
                 </button>
             )}
@@ -44,7 +51,11 @@ const BottomNav = () => {
                     )}
                 </div>
             </div>
-            <NewPostModal isOpen={isNewPostModalOpen} onClose={() => setIsNewPostModalOpen(false)} isQuery={true} />
+            <NewPostModal
+                isOpen={isNewPostModalOpen}
+                onClose={() => setIsNewPostModalOpen(false)}
+                isQuery={isQueryPage}
+            />
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         </>
     );
