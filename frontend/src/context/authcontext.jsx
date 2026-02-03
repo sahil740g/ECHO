@@ -205,6 +205,13 @@ export const AuthProvider = ({ children }) => {
         },
       });
       if (error) throw error;
+
+      // Auto-login after signup if user exists (no email confirmation required)
+      if (data.user && data.session) {
+        console.log("User signed up successfully, auto-logging in...");
+        await fetchUserData(data.user);
+      }
+
       return { data, error: null };
     } catch (error) {
       console.error("Signup error:", error.message);
