@@ -40,9 +40,8 @@ function PostCard({
 
   const isBookmarked = user?.savedPosts?.includes(id);
 
-  // Derived state for display
-  // Visually clamp to 0 (never show negative), but receive true value for logic consistency
-  const voteCount = Math.max(0, votes);
+  // Use vote count directly (can be negative, like Reddit)
+  const voteCount = votes;
   const userVote = propsUserVote;
 
   // Get real comment count from context

@@ -234,14 +234,11 @@ export function PostsProvider({ children }) {
             calculatedUserVote = type;
           }
 
-          // Save accurate count for database (can be negative)
+          // Save accurate count for database and display (can be negative)
           finalVoteCount = newVoteCount;
           newUserVote = calculatedUserVote;
 
-          // Clamp ONLY for display in UI (never show negative)
-          const displayCount = Math.max(0, newVoteCount);
-
-          return { ...p, votes: displayCount, userVote: calculatedUserVote };
+          return { ...p, votes: newVoteCount, userVote: calculatedUserVote };
         }
         return p;
       }),
