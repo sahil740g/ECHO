@@ -15,11 +15,18 @@ const BottomNav = () => {
     // We check if it starts with /chat/ (with slash)
     if (location.pathname.startsWith('/chat/')) return null;
 
+    // Pages where the "New Post" (+) button should be visible
+    const showNewPostButton = ['/feed', '/query', '/trending'].some(path =>
+        location.pathname === path || location.pathname.startsWith(path + '/')
+    );
+
     return (
         <>
-            <button onClick={() => setIsNewPostModalOpen(true)} className="fixed bottom-20 right-4 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg md:hidden z-50 hover:bg-blue-600 transition cursor-pointer">
-                <Plus size={24} />
-            </button>
+            {showNewPostButton && (
+                <button onClick={() => setIsNewPostModalOpen(true)} className="fixed bottom-20 right-4 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg md:hidden z-50 hover:bg-blue-600 transition cursor-pointer">
+                    <Plus size={24} />
+                </button>
+            )}
             <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#0d1117]/90 backdrop-blur-md border-t border-white/5 z-50 md:hidden pb-safe">
                 <div className="flex justify-around items-center h-full px-2">
                     <BottomNavItem to="/feed" icon={Newspaper} label="Feed" />
