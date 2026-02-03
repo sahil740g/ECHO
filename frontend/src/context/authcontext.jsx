@@ -420,6 +420,12 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    // Prevent self-follow
+    if (user.handle === handle) {
+      console.warn("Cannot follow yourself");
+      return;
+    }
+
     const isFollowing = user.following.includes(handle);
     let newFollowing;
 

@@ -229,7 +229,14 @@ export const ChatProvider = ({ children }) => {
     }
 
     function onDmMessage(data) {
-      // Add message to the appropriate conversation
+      // Only add messages from OTHER users (your messages are already added optimistically)
+      const currentUserId = localStorage.getItem('currentUserId'); // We'll set this on login
+
+      if (data.message.senderId === currentUserId) {
+        return; // Skip - already added via optimistic update
+      }
+
+      // Add message from other user to the appropriate conversation
       setChats((prev) =>
         prev.map((chat) =>
           chat.id === data.conversationId
