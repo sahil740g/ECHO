@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useAuth } from "./authcontext";
 import { supabase } from "../lib/supabase";
+import { socket } from "../lib/socket";
 
 const NotificationContext = createContext();
 
@@ -111,7 +112,7 @@ export const NotificationProvider = ({ children }) => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Real-time subscription
+  // Real-time subscription via Supabase
   useEffect(() => {
     if (!user) return;
 
@@ -133,6 +134,25 @@ export const NotificationProvider = ({ children }) => {
 
     return () => {
       subscription.unsubscribe();
+    };
+  }, [user, fetchNotifications]);
+
+  // Real-time subscription via Socket.io (backup/additional)
+  useEffect(() => {
+    if (!user) return;
+
+    socket.connect();
+
+    const handleNewNotification = (notification) => {
+      console.log('[NOTIFICATION] New notification received via Socket.io:', notification);
+      // Refetch to get transformed data
+      fetchNotifications();
+    };
+
+    socket.on('notification:new', handleNewNotification);
+
+    return () => {
+      socket.off('notification:new', handleNewNotification);
     };
   }, [user, fetchNotifications]);
 
