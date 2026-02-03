@@ -90,7 +90,14 @@ const authenticateToken = (req, res, next) => {
 
 // Protected Route Example: Verify Token
 app.get("/verify", authenticateToken, (req, res) => {
-  res.json({ message: "Token is valid", user: req.user });
+  // Return user with 'id' field instead of 'userId' for frontend consistency
+  res.json({
+    message: "Token is valid",
+    user: {
+      id: req.user.userId,
+      email: req.user.email
+    }
+  });
 });
 
 // Track online users
