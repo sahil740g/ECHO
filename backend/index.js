@@ -53,7 +53,7 @@ app.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // 3. Return Token and User Info
+    // 3. Return Token, User Info, and Supabase Session
     return res.json({
       message: "Login successful",
       token,
@@ -62,6 +62,7 @@ app.post("/login", async (req, res) => {
         email: data.user.email,
         metadata: data.user.user_metadata,
       },
+      session: data.session, // Include Supabase session for frontend RLS
     });
 
   } catch (err) {

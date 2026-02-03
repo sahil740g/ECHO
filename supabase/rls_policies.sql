@@ -209,9 +209,7 @@ CREATE POLICY "Users can read their conversation participations"
   ON conversation_participants
   FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid() OR conversation_id IN (
-    SELECT conversation_id FROM conversation_participants WHERE user_id = auth.uid()
-  ));
+  USING (user_id = auth.uid());
 
 CREATE POLICY "Authenticated users can join conversations"
   ON conversation_participants

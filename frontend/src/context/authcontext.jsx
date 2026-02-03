@@ -232,6 +232,14 @@ export const AuthProvider = ({ children }) => {
         // Set global header
         axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
 
+        // CRITICAL: Set Supabase session for RLS policies
+        if (data.session) {
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+        }
+
         // Use the user data from backend to fetch profile
         if (data.user) {
           await fetchUserData(data.user);
