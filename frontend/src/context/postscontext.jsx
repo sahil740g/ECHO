@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./authcontext";
 import { useNotifications } from "./NotificationContext";
@@ -10,6 +10,9 @@ export function PostsProvider({ children }) {
   const { createNotification } = useNotifications();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Track pending vote requests to prevent race conditions
+  const pendingVotes = useRef(new Set());
 
   // Fetch posts from Supabase on mount
   useEffect(() => {
@@ -185,67 +188,106 @@ export function PostsProvider({ children }) {
       return;
     }
 
+    // Prevent race conditions: Skip if there's already a pending vote for this post
+    const voteKey = `${postId}-${user.id}`;
+    if (pendingVotes.current.has(voteKey)) {
+      console.warn(`Vote already in progress for post ${postId}, skipping...`);
+      return;
+    }
+
+    // Mark this vote as pending
+    pendingVotes.current.add(voteKey);
+
     // IMPORTANT: Capture current state BEFORE optimistic update to avoid stale closure
     const post = posts.find((p) => p.id === postId);
-    const currentVote = post?.userVote;
-    const currentAuthorId = post?.authorId;
+    if (!post) {
+      pendingVotes.current.delete(voteKey);
+      console.error(`Post ${postId} not found`);
+      return;
+    }
+
+    const currentVote = post.userVote;
+    const currentAuthorId = post.authorId;
+    const previousVoteCount = post.votes;
 
     // Optimistic update
     let finalVoteCount = 0; // To capture the calculated value
+    let newUserVote = null;
 
     setPosts((prevPosts) =>
       prevPosts.map((p) => {
         if (p.id === postId) {
           let newVoteCount = p.votes;
-          let newUserVote = p.userVote;
+          let calculatedUserVote = p.userVote;
 
-          if (newUserVote === type) {
+          if (calculatedUserVote === type) {
             newVoteCount = type === "up" ? newVoteCount - 1 : newVoteCount + 1;
-            newUserVote = null;
-          } else if (!newUserVote) {
+            calculatedUserVote = null;
+          } else if (!calculatedUserVote) {
             newVoteCount = type === "up" ? newVoteCount + 1 : newVoteCount - 1;
-            newUserVote = type;
+            calculatedUserVote = type;
           } else {
             newVoteCount = type === "up" ? newVoteCount + 2 : newVoteCount - 2;
-            newUserVote = type;
+            calculatedUserVote = type;
           }
 
           // Clamp vote count to 0 to ensure no negative numbers are stored or displayed
           newVoteCount = Math.max(0, newVoteCount);
 
           finalVoteCount = newVoteCount; // Capture for server update
-          return { ...p, votes: newVoteCount, userVote: newUserVote };
+          newUserVote = calculatedUserVote;
+          return { ...p, votes: newVoteCount, userVote: calculatedUserVote };
         }
         return p;
       }),
     );
 
     try {
+      console.log(`[VOTE] Processing ${type} vote for post ${postId}`, {
+        currentVote,
+        previousCount: previousVoteCount,
+        newCount: finalVoteCount,
+        newUserVote
+      });
 
       if (currentVote === type) {
         // Remove vote
-        await supabase
+        const { error } = await supabase
           .from("votes")
           .delete()
           .eq("user_id", user.id)
           .eq("post_id", postId);
+
+        if (error) throw error;
+        console.log(`[VOTE] Successfully removed ${type} vote from post ${postId}`);
       } else if (!currentVote) {
         // New vote
-        await supabase
+        const { error } = await supabase
           .from("votes")
           .insert({ user_id: user.id, post_id: postId, vote_type: type });
+
+        if (error) throw error;
+        console.log(`[VOTE] Successfully added ${type} vote to post ${postId}`);
       } else {
         // Update vote
-        await supabase
+        const { error } = await supabase
           .from("votes")
           .update({ vote_type: type })
           .eq("user_id", user.id)
           .eq("post_id", postId);
+
+        if (error) throw error;
+        console.log(`[VOTE] Successfully changed vote from ${currentVote} to ${type} on post ${postId}`);
       }
 
       // Update post votes count with the CALCULATED value from optimistic update
-      // We rely on finalVoteCount which was captured from the robust prevPosts logic
-      await supabase.from("posts").update({ votes: finalVoteCount }).eq("id", postId);
+      const { error: updateError } = await supabase
+        .from("posts")
+        .update({ votes: finalVoteCount })
+        .eq("id", postId);
+
+      if (updateError) throw updateError;
+      console.log(`[VOTE] Successfully updated post vote count to ${finalVoteCount}`);
 
       // Notification for Like (using captured currentAuthorId to avoid stale closure)
       if (type === "up" && (!currentVote || currentVote !== "up") && user.id !== currentAuthorId) {
@@ -258,9 +300,22 @@ export function PostsProvider({ children }) {
       }
 
     } catch (error) {
-      console.error("Error voting:", error);
-      // Revert on error
-      fetchPosts();
+      console.error(`[VOTE ERROR] Failed to record vote for post ${postId}:`, error);
+
+      // Improved error handling: Revert ONLY the affected post, not entire list
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId
+            ? { ...p, votes: previousVoteCount, userVote: currentVote }
+            : p
+        )
+      );
+
+      // Optional: Show user-friendly error (could integrate with toast notifications)
+      console.warn("Vote failed - state reverted. Please try again.");
+    } finally {
+      // Always remove from pending votes
+      pendingVotes.current.delete(voteKey);
     }
   };
 
