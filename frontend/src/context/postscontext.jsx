@@ -211,7 +211,7 @@ export function PostsProvider({ children }) {
     const previousVoteCount = post.votes;
 
     // Optimistic update
-    let finalVoteCount = 0; // To capture the calculated value
+    let finalVoteCount = 0; // To capture the calculated value (for database)
     let newUserVote = null;
 
     setPosts((prevPosts) =>
@@ -221,22 +221,27 @@ export function PostsProvider({ children }) {
           let calculatedUserVote = p.userVote;
 
           if (calculatedUserVote === type) {
+            // Removing vote
             newVoteCount = type === "up" ? newVoteCount - 1 : newVoteCount + 1;
             calculatedUserVote = null;
           } else if (!calculatedUserVote) {
+            // Adding new vote
             newVoteCount = type === "up" ? newVoteCount + 1 : newVoteCount - 1;
             calculatedUserVote = type;
           } else {
+            // Switching votes (up to down or down to up)
             newVoteCount = type === "up" ? newVoteCount + 2 : newVoteCount - 2;
             calculatedUserVote = type;
           }
 
-          // Clamp vote count to 0 to ensure no negative numbers are stored or displayed
-          newVoteCount = Math.max(0, newVoteCount);
-
-          finalVoteCount = newVoteCount; // Capture for server update
+          // Save accurate count for database (can be negative)
+          finalVoteCount = newVoteCount;
           newUserVote = calculatedUserVote;
-          return { ...p, votes: newVoteCount, userVote: calculatedUserVote };
+
+          // Clamp ONLY for display in UI (never show negative)
+          const displayCount = Math.max(0, newVoteCount);
+
+          return { ...p, votes: displayCount, userVote: calculatedUserVote };
         }
         return p;
       }),
