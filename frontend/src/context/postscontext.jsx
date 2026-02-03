@@ -410,6 +410,16 @@ export function PostsProvider({ children }) {
   };
 
   useEffect(() => {
+    // Connect to socket and register user
+    if (user) {
+      socket.connect();
+      socket.emit('user:join', {
+        id: user.id,
+        name: user.name,
+        handle: user.handle
+      });
+    }
+
     fetchStats();
 
     // Listen for real-time stats updates from Socket.io
@@ -428,7 +438,7 @@ export function PostsProvider({ children }) {
       clearInterval(interval);
       socket.off('stats:response');
     };
-  }, []);
+  }, [user]);
 
   return (
     <PostsContext.Provider
