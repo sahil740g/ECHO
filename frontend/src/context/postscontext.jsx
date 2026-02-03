@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./authcontext";
 import { useNotifications } from "./NotificationContext";
+import { socket } from "../lib/socket";
 
 const PostsContext = createContext();
 
@@ -395,15 +396,14 @@ export function PostsProvider({ children }) {
       if (postsError) throw postsError;
       if (usersError) throw usersError;
 
-      // Heuristic for online users (random variation for liveness effect)
-      // Base it on total users to seem realistic: ~15-20% online
-      const onlineCount = Math.floor(usersCount * (0.15 + Math.random() * 0.05)) + 1;
+      // Get real online count from Socket.io backend
+      socket.emit('stats:request');
 
-      setStats({
+      setStats(prev => ({
+        ...prev,
         totalUsers: usersCount || 0,
-        onlineUsers: onlineCount,
         totalPosts: postsCount || 0,
-      });
+      }));
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
@@ -411,9 +411,23 @@ export function PostsProvider({ children }) {
 
   useEffect(() => {
     fetchStats();
+
+    // Listen for real-time stats updates from Socket.io
+    socket.on('stats:response', (data) => {
+      console.log('[STATS] Received online count:', data.onlineUsers);
+      setStats(prev => ({
+        ...prev,
+        onlineUsers: data.onlineUsers || 0
+      }));
+    });
+
     // Refresh stats every 2 minutes
     const interval = setInterval(fetchStats, 120000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(interval);
+      socket.off('stats:response');
+    };
   }, []);
 
   return (

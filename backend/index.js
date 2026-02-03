@@ -119,6 +119,13 @@ io.on("connection", (socket) => {
     io.emit("community:message", message);
   });
 
+  // Stats request - Send online user count
+  socket.on("stats:request", () => {
+    socket.emit("stats:response", {
+      onlineUsers: onlineUsers.size
+    });
+  });
+
   // Direct Messages - Join conversation room
   socket.on("dm:join", (conversationId) => {
     socket.join(`dm:${conversationId}`);
