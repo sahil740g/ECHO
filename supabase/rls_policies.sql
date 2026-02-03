@@ -9,6 +9,9 @@ ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
 -- Enable RLS on posts table (if not already enabled)
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 
+-- Enable RLS on notifications table (if not already enabled)
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
 -- ====================================
 -- DROP EXISTING POLICIES (if they exist)
 -- ====================================
@@ -238,3 +241,31 @@ CREATE POLICY "Authenticated users can send messages"
       SELECT conversation_id FROM conversation_participants WHERE user_id = auth.uid()
     )
   );
+
+-- ====================================
+-- NOTIFICATIONS TABLE POLICIES
+-- ====================================
+
+DROP POLICY IF EXISTS "Users can read own notifications" ON notifications;
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
+DROP POLICY IF EXISTS "System can create notifications" ON notifications;
+
+CREATE POLICY "Users can read own notifications"
+  ON notifications
+  FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notifications"
+  ON notifications
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "System can create notifications"
+  ON notifications
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+

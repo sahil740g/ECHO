@@ -19,6 +19,38 @@ export function PostsProvider({ children }) {
     fetchPosts();
   }, []);
 
+  // Real-time subscription for vote updates
+  useEffect(() => {
+    if (!user) return;
+
+    const subscription = supabase
+      .channel('posts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'posts',
+        },
+        (payload) => {
+          console.log('[REALTIME] Post updated:', payload.new);
+          // Update the specific post with new vote count
+          setPosts((prevPosts) =>
+            prevPosts.map((post) =>
+              post.id === payload.new.id
+                ? { ...post, votes: payload.new.votes }
+                : post
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user]);
+
   const fetchPosts = async () => {
     try {
       // Create a promise that rejects after 5 seconds to prevent hanging
