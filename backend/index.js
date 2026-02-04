@@ -134,7 +134,8 @@ io.on("connection", (socket) => {
   // Direct Messages - Relay message to room
   socket.on("dm:message", ({ conversationId, message }) => {
     // Server just relays; ID comes from Supabase
-    io.to(`dm:${conversationId}`).emit("dm:message", {
+    // Use socket.to() instead of io.to() to exclude sender (they already have it via optimistic update)
+    socket.to(`dm:${conversationId}`).emit("dm:message", {
       conversationId,
       message,
     });
