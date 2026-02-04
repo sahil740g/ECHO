@@ -240,11 +240,6 @@ const Chat = () => {
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSend(e);
-                    }
-                  }}
                   placeholder="Start a new message"
                   className="flex-1 bg-transparent border-none focus:outline-none text-white placeholder-gray-500"
                 />
