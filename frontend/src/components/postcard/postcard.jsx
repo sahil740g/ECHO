@@ -112,7 +112,7 @@ function PostCard({
             <ThumbsDown size={20} />
           </button>
         </div>
-        <div className="flex-1 flex flex-col min-h-[180px]">
+        <div className="flex-1 min-w-0 flex flex-col min-h-[180px]">
           <div
             className="flex items-center gap-3 mb-2 cursor-pointer group/user"
             onClick={(e) => {
@@ -255,19 +255,19 @@ function PostCard({
             )}
           </div>
           {showCode && codeSnippet && (
-            <div className="mt-4 mb-4 rounded-lg border border-white/10 overflow-hidden bg-[#0d1117] max-w-full">
-              <div className="flex justify-between items-center px-3 md:px-4 py-2 bg-[#0d1117] border-b border-white/5">
-                <div className="flex gap-1.5">
+            <div className="mt-4 mb-4 rounded-lg border border-white/10 overflow-hidden bg-[#0d1117] w-full">
+              <div className="flex justify-between items-center px-2 md:px-4 py-2 bg-[#0d1117] border-b border-white/5">
+                <div className="flex gap-1.5 shrink-0">
                   <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
                   <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
                 </div>
-                <span className="text-xs font-mono text-zinc-500 capitalized">
+                <span className="text-xs font-mono text-zinc-500 capitalized flex-1 text-center">
                   {language}
                 </span>
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1.5 hover:text-white transition text-xs font-medium text-zinc-400"
+                  className="flex items-center gap-1.5 hover:text-white transition text-xs font-medium text-zinc-400 shrink-0"
                 >
                   {isCopied ? (
                     <Check size={14} className="text-green-500" />
@@ -277,7 +277,7 @@ function PostCard({
                   <span className="hidden sm:inline">{isCopied ? "Copied!" : "Copy"}</span>
                 </button>
               </div>
-              <pre className="p-3 md:p-4 text-xs md:text-sm overflow-x-auto max-w-full">
+              <pre className="p-2 md:p-4 text-xs md:text-sm overflow-x-auto w-full">
                 <code className="text-green-400 whitespace-pre">
                   {codeSnippet}
                 </code>
