@@ -162,7 +162,7 @@ export const ChatProvider = ({ children }) => {
       // 2. Fetch messages for ALL target IDs (using .in())
       const { data: messagesData, error: msgError } = await supabase
         .from("messages")
-        .select("*")
+        .select("id, conversation_id, sender_id, text, created_at, deleted_for_everyone, deleted_by, deleted_at")
         .in("conversation_id", targetIds)
         .order("created_at", { ascending: true });
 
@@ -193,13 +193,19 @@ export const ChatProvider = ({ children }) => {
       // 4. Combine data
       const messages = messagesData.map((msg) => {
         const sender = profilesMap.get(msg.sender_id);
+
+        // Check if message was deleted for everyone
+        const isDeletedForEveryone = msg.deleted_for_everyone === true;
+
         return {
           id: msg.id,
           senderId: msg.sender_id,
-          text: msg.text,
+          text: isDeletedForEveryone ? "This message was deleted" : msg.text,
           timestamp: msg.created_at,
           senderName: sender?.name || "Unknown",
           senderAvatar: sender?.avatar_url,
+          deletedForEveryone: isDeletedForEveryone,
+          deletedBy: msg.deleted_by,
         };
       });
 
