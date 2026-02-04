@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useChat } from "../context/ChatContext";
 import { useAuth } from "../context/authcontext";
-import { Send, ArrowLeft, Search, MoreVertical, Smile } from "lucide-react";
+import { Send, ArrowLeft, Search, MoreVertical, Smile, Image, Loader } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useNavigate, useParams } from "react-router-dom";
 import MessageContextMenu from "../components/MessageContextMenu";
 
 const Chat = () => {
   // Rename context's selectChat to avoid collision
-  const { chats, sendMessage, selectChat: setContextActiveChat, deleteMessageForMe, deleteMessageForEveryone } = useChat();
+  const { chats, sendMessage, sendMediaMessage, selectChat: setContextActiveChat, deleteMessageForMe, deleteMessageForEveryone } = useChat();
   const { user } = useAuth();
   const { chatId } = useParams();
   const [messageInput, setMessageInput] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [contextMenu, setContextMenu] = useState({ isOpen: false, messageId: null, position: { x: 0, y: 0 }, isSender: false });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   // Sync URL param with Context State to trigger message fetching
@@ -59,11 +62,48 @@ const Chat = () => {
     scrollToBottom();
   }, [activeChat?.messages]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!messageInput.trim() || !activeChatId) return;
-    sendMessage(activeChatId, messageInput);
-    setMessageInput("");
+    if (!activeChatId) return;
+
+    if (selectedFile) {
+      // Send media message with optional text
+      await sendMediaMessage(activeChatId, selectedFile, messageInput);
+      setSelectedFile(null);
+      setFilePreview(null);
+      setMessageInput("");
+    } else if (messageInput.trim()) {
+      // Send text-only message
+      sendMessage(activeChatId, messageInput);
+      setMessageInput("");
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      alert("Please select an image or video file");
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size must be less than 10MB");
+      return;
+    }
+
+    setSelectedFile(file);
+    setFilePreview(URL.createObjectURL(file));
+    // Clear file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const clearFileSelection = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
   };
 
   const formatTime = (timestamp) => {
@@ -220,23 +260,55 @@ const Chat = () => {
               {activeChat.messages && activeChat.messages.map((msg, index) => {
                 const isMe = msg.senderId === (user?.id || "curr_user");
                 const isDeleted = msg.deletedForEveryone || msg.text === "This message was deleted";
+                const hasMedia = msg.mediaUrl && msg.mediaType;
 
                 return (
-                  // FIX: w-full required for flex justify to work if parent is flex col default? No, just safe.
                   <div
                     key={msg.id || index}
                     className={`w-full flex ${isMe ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMe
+                      className={`max-w-[70%] rounded-2xl overflow-hidden ${hasMedia ? "p-0" : "px-4 py-2"} text-sm ${isMe
                         ? "bg-blue-500 text-white rounded-br-none"
                         : "bg-[#2F3336] text-white rounded-bl-none"
                         } ${!isDeleted ? "cursor-pointer" : "italic opacity-60"}`}
                       onContextMenu={(e) => !isDeleted && handleMessageRightClick(e, msg)}
                     >
-                      <p>{isDeleted ? "🚫 This message was deleted" : msg.text}</p>
+                      {/* Media Content */}
+                      {hasMedia && !isDeleted && (
+                        <div className="relative">
+                          {msg.uploading && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                              <Loader className="animate-spin" size={24} />
+                            </div>
+                          )}
+                          {msg.mediaType === "image" ? (
+                            <img
+                              src={msg.mediaUrl}
+                              alt="Shared image"
+                              className="max-w-full h-auto max-h-96 object-contain"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <video
+                              src={msg.mediaUrl}
+                              controls
+                              className="max-w-full h-auto max-h-96"
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      {/* Text Content */}
+                      {(msg.text || isDeleted) && (
+                        <div className={hasMedia ? "px-4 py-2" : ""}>
+                          <p>{isDeleted ? "🚫 This message was deleted" : msg.text}</p>
+                        </div>
+                      )}
+
+                      {/* Timestamp */}
                       <p
-                        className={`text-[10px] mt-1 text-right ${isMe ? "text-blue-100" : "text-gray-400"}`}
+                        className={`text-[10px] mt-1 text-right ${hasMedia ? "px-4 pb-2" : ""} ${isMe ? "text-blue-100" : "text-gray-400"}`}
                       >
                         {formatTime(msg.timestamp)}
                       </p>
@@ -248,6 +320,26 @@ const Chat = () => {
             </div>
 
             <div className="p-3 md:p-4 border-t border-[#2F3336] bg-black">
+              {/* File Preview */}
+              {filePreview && selectedFile && (
+                <div className="mb-3 relative inline-block">
+                  <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-blue-500">
+                    {selectedFile.type.startsWith("image/") ? (
+                      <img src={filePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <video src={filePreview} className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearFileSelection}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
               <form
                 onSubmit={handleSend}
                 className="flex items-center gap-1 md:gap-2 bg-[#202327] rounded-full px-2 md:px-4 py-2 relative"
@@ -257,6 +349,26 @@ const Chat = () => {
                     <EmojiPicker theme="dark" onEmojiClick={onEmojiClick} />
                   </div>
                 )}
+
+                {/* File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
+                {/* Media Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-blue-500 hover:bg-blue-500/10 p-1.5 md:p-2 rounded-full transition-colors shrink-0"
+                >
+                  <Image size={18} className="md:w-5 md:h-5" />
+                </button>
+
+                {/* Emoji Button */}
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -264,16 +376,20 @@ const Chat = () => {
                 >
                   <Smile size={18} className="md:w-5 md:h-5" />
                 </button>
+
+                {/* Text Input */}
                 <input
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder="Start a new message"
+                  placeholder={selectedFile ? "Add a caption (optional)" : "Start a new message"}
                   className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-white placeholder-gray-500 text-sm md:text-base"
                 />
+
+                {/* Send Button */}
                 <button
                   type="submit"
-                  disabled={!messageInput.trim()}
+                  disabled={!messageInput.trim() && !selectedFile}
                   className="text-blue-500 disabled:text-gray-600 disabled:cursor-not-allowed hover:bg-blue-500/10 p-1.5 md:p-2 rounded-full transition-colors shrink-0"
                 >
                   <Send size={18} className="md:w-5 md:h-5" />

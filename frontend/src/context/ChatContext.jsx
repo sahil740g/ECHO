@@ -162,7 +162,7 @@ export const ChatProvider = ({ children }) => {
       // 2. Fetch messages for ALL target IDs (using .in())
       const { data: messagesData, error: msgError } = await supabase
         .from("messages")
-        .select("id, conversation_id, sender_id, text, created_at, deleted_for_everyone, deleted_by, deleted_at")
+        .select("id, conversation_id, sender_id, text, created_at, deleted_for_everyone, deleted_by, deleted_at, media_url, media_type")
         .in("conversation_id", targetIds)
         .order("created_at", { ascending: true });
 
@@ -206,6 +206,8 @@ export const ChatProvider = ({ children }) => {
           senderAvatar: sender?.avatar_url,
           deletedForEveryone: isDeletedForEveryone,
           deletedBy: msg.deleted_by,
+          mediaUrl: msg.media_url,
+          mediaType: msg.media_type,
         };
       });
 
@@ -358,6 +360,123 @@ export const ChatProvider = ({ children }) => {
     } catch (error) {
       console.error("Error sending message:", error);
       alert(`Debug Error: ${error.message} (Code: ${error.code})`);
+      // Revert on error
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId
+            ? {
+              ...chat,
+              messages: chat.messages.filter((m) => m.id !== tempId),
+            }
+            : chat,
+        ),
+      );
+    }
+  };
+
+  const sendMediaMessage = async (chatId, file, text = "") => {
+    if (!user || !file) return;
+
+    // Validate file size (10MB limit)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      alert("File size must be less than 10MB");
+      return;
+    }
+
+    // Determine media type
+    const mediaType = file.type.startsWith("image/") ? "image" : "video";
+
+    const tempId = `temp_${Date.now()}`;
+    const newMessage = {
+      id: tempId,
+      senderId: user.id,
+      text: text || "",
+      timestamp: new Date().toISOString(),
+      senderName: user.name,
+      senderAvatar: user.avatar || user.avatar_url,
+      mediaType,
+      mediaUrl: URL.createObjectURL(file), // Temporary preview URL
+      uploading: true,
+    };
+
+    // Optimistic update
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === chatId
+          ? { ...chat, messages: [...chat.messages, newMessage] }
+          : chat,
+      ),
+    );
+
+    try {
+      // Upload file to Supabase Storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("chat-media")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("chat-media")
+        .getPublicUrl(fileName);
+
+      // Insert message to database
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: chatId,
+          sender_id: user.id,
+          text: text || null,
+          media_url: publicUrl,
+          media_type: mediaType,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update with real data
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId
+            ? {
+              ...chat,
+              messages: chat.messages.map((m) =>
+                m.id === tempId
+                  ? {
+                    ...m,
+                    id: data.id,
+                    mediaUrl: publicUrl,
+                    uploading: false,
+                  }
+                  : m,
+              ),
+            }
+            : chat,
+        ),
+      );
+
+      // Broadcast via Socket.io
+      socket.emit("dm:message", {
+        conversationId: chatId,
+        message: {
+          ...newMessage,
+          id: data.id,
+          mediaUrl: publicUrl,
+          uploading: false,
+        },
+      });
+    } catch (error) {
+      console.error("Error sending media message:", error);
+      alert(`Failed to send media: ${error.message}`);
       // Revert on error
       setChats((prev) =>
         prev.map((chat) =>
@@ -531,6 +650,7 @@ export const ChatProvider = ({ children }) => {
         activeChat,
         selectChat,
         sendMessage,
+        sendMediaMessage,
         deleteMessageForMe,
         deleteMessageForEveryone,
         getOrCreateChat,
