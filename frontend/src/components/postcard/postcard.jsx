@@ -255,8 +255,8 @@ function PostCard({
             )}
           </div>
           {showCode && codeSnippet && (
-            <div className="mt-4 mb-4 rounded-lg border border-white/10 overflow-hidden bg-[#0d1117]">
-              <div className="flex justify-between items-center px-4 py-2 bg-[#0d1117] border-b border-white/5">
+            <div className="mt-4 mb-4 rounded-lg border border-white/10 overflow-hidden bg-[#0d1117] max-w-full">
+              <div className="flex justify-between items-center px-3 md:px-4 py-2 bg-[#0d1117] border-b border-white/5">
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
@@ -274,10 +274,10 @@ function PostCard({
                   ) : (
                     <div className="i-lucide-copy" />
                   )}
-                  {isCopied ? "Copied!" : "Copy"}
+                  <span className="hidden sm:inline">{isCopied ? "Copied!" : "Copy"}</span>
                 </button>
               </div>
-              <pre className="p-4 text-sm overflow-x-auto">
+              <pre className="p-3 md:p-4 text-xs md:text-sm overflow-x-auto max-w-full">
                 <code className="text-green-400 whitespace-pre">
                   {codeSnippet}
                 </code>
