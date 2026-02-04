@@ -219,10 +219,10 @@ const Chat = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-4 border-t border-[#2F3336] bg-black">
+            <div className="p-3 md:p-4 border-t border-[#2F3336] bg-black">
               <form
                 onSubmit={handleSend}
-                className="flex items-center gap-2 bg-[#202327] rounded-full px-4 py-2 relative"
+                className="flex items-center gap-1 md:gap-2 bg-[#202327] rounded-full px-2 md:px-4 py-2 relative"
               >
                 {showEmojiPicker && (
                   <div className="absolute bottom-14 left-0 z-50">
@@ -232,23 +232,23 @@ const Chat = () => {
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="text-blue-500 hover:bg-blue-500/10 p-2 rounded-full transition-colors"
+                  className="text-blue-500 hover:bg-blue-500/10 p-1.5 md:p-2 rounded-full transition-colors shrink-0"
                 >
-                  <Smile size={20} />
+                  <Smile size={18} className="md:w-5 md:h-5" />
                 </button>
                 <input
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   placeholder="Start a new message"
-                  className="flex-1 bg-transparent border-none focus:outline-none text-white placeholder-gray-500"
+                  className="flex-1 min-w-0 bg-transparent border-none focus:outline-none text-white placeholder-gray-500 text-sm md:text-base"
                 />
                 <button
                   type="submit"
                   disabled={!messageInput.trim()}
-                  className="text-blue-500 disabled:text-gray-600 disabled:cursor-not-allowed hover:bg-blue-500/10 p-2 rounded-full transition-colors"
+                  className="text-blue-500 disabled:text-gray-600 disabled:cursor-not-allowed hover:bg-blue-500/10 p-1.5 md:p-2 rounded-full transition-colors shrink-0"
                 >
-                  <Send size={20} />
+                  <Send size={18} className="md:w-5 md:h-5" />
                 </button>
               </form>
             </div>
