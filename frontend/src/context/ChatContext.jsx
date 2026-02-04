@@ -246,14 +246,40 @@ export const ChatProvider = ({ children }) => {
       );
     }
 
+    function onDmDelete(data) {
+      // Update all users when a message is deleted for everyone
+      setChats((prev) =>
+        prev.map((chat) => {
+          if (chat.id === data.conversationId) {
+            return {
+              ...chat,
+              messages: chat.messages.map((msg) =>
+                msg.id === data.messageId
+                  ? {
+                    ...msg,
+                    text: "This message was deleted",
+                    deletedForEveryone: true,
+                    deletedBy: data.deletedBy,
+                  }
+                  : msg
+              ),
+            };
+          }
+          return chat;
+        })
+      );
+    }
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("dm:message", onDmMessage);
+    socket.on("dm:delete", onDmDelete);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("dm:message", onDmMessage);
+      socket.off("dm:delete", onDmDelete);
       socket.disconnect();
     };
   }, []);

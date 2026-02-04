@@ -1,4 +1,4 @@
-import { Trash2, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 function MessageContextMenu({
@@ -10,6 +10,37 @@ function MessageContextMenu({
     isSender
 }) {
     const menuRef = useRef(null);
+    const [adjustedPosition, setAdjustedPosition] = useState(position);
+
+    // Adjust position to stay within viewport
+    useEffect(() => {
+        if (isOpen && menuRef.current) {
+            const menu = menuRef.current;
+            const menuRect = menu.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let { x, y } = position;
+
+            // Adjust horizontal position
+            if (x + menuRect.width > viewportWidth) {
+                x = viewportWidth - menuRect.width - 10; // 10px padding
+            }
+            if (x < 10) {
+                x = 10;
+            }
+
+            // Adjust vertical position
+            if (y + menuRect.height > viewportHeight) {
+                y = viewportHeight - menuRect.height - 10; // 10px padding
+            }
+            if (y < 10) {
+                y = 10;
+            }
+
+            setAdjustedPosition({ x, y });
+        }
+    }, [isOpen, position]);
 
     // Close on click outside
     useEffect(() => {
@@ -34,7 +65,7 @@ function MessageContextMenu({
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-40"
+                className="fixed inset-0 z-40 bg-transparent"
                 onClick={onClose}
             />
 
@@ -43,8 +74,8 @@ function MessageContextMenu({
                 ref={menuRef}
                 className="fixed z-50 bg-[#16181C] border border-white/10 rounded-lg shadow-2xl min-w-[200px] animate-in zoom-in-95 duration-150"
                 style={{
-                    top: `${position.y}px`,
-                    left: `${position.x}px`,
+                    top: `${adjustedPosition.y}px`,
+                    left: `${adjustedPosition.x}px`,
                 }}
             >
                 <div className="py-2">

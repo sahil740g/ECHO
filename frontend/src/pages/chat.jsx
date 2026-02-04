@@ -5,7 +5,6 @@ import { Send, ArrowLeft, Search, MoreVertical, Smile } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useNavigate, useParams } from "react-router-dom";
 import MessageContextMenu from "../components/MessageContextMenu";
-import { socket } from "../lib/socket";
 
 const Chat = () => {
   // Rename context's selectChat to avoid collision
@@ -101,18 +100,6 @@ const Chat = () => {
       deleteMessageForEveryone(contextMenu.messageId, activeChatId);
     }
   };
-
-  // Socket listener for real-time message deletion
-  useEffect(() => {
-    socket.on("dm:delete", ({ messageId }) => {
-      // The ChatContext will handle updating the message state
-      console.log(`Message ${messageId} deleted by another user`);
-    });
-
-    return () => {
-      socket.off("dm:delete");
-    };
-  }, []);
 
   return (
     // FIX: height calculation to prevent input from being pushed off-screen
