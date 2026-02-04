@@ -18,10 +18,10 @@ export function CommentsProvider({ children }) {
   // Fetch comments for a specific post
   // forceRefresh bypasses the loading check to handle cases where navigation interrupted a fetch
   const fetchComments = useCallback(
-    async (postId, forceRefresh = false) => {
+    async (postId, forceRefresh = false, silent = false) => {
       if (loadingPosts[postId] && !forceRefresh) return;
 
-      setLoadingPosts((prev) => ({ ...prev, [postId]: true }));
+      if (!silent) setLoadingPosts((prev) => ({ ...prev, [postId]: true }));
 
       try {
         const { data, error } = await supabase
@@ -98,7 +98,7 @@ export function CommentsProvider({ children }) {
       } catch (error) {
         console.error("Error fetching comments:", error);
       } finally {
-        setLoadingPosts((prev) => ({ ...prev, [postId]: false }));
+        if (!silent) setLoadingPosts((prev) => ({ ...prev, [postId]: false }));
       }
     },
     [loadingPosts],
@@ -490,7 +490,7 @@ export function CommentsProvider({ children }) {
       // Refresh comments to get updated counts from database
       try {
         console.log('[COMMENT VOTE] Refreshing comments to get updated counts');
-        await fetchComments(postId, true);
+        await fetchComments(postId, true, true);
       } catch (refreshError) {
         console.warn('[COMMENT VOTE] Failed to refresh comments:', refreshError);
         // Don't throw here - the vote was successful, just the refresh failed
