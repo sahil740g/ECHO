@@ -215,6 +215,35 @@ export function PostsProvider({ children }) {
     }
   };
 
+  const deletePost = async (postId) => {
+    if (!user) {
+      console.error("Must be logged in to delete a post");
+      return false;
+    }
+
+    try {
+      // Optimistically remove from UI
+      setPosts((prev) => prev.filter((post) => post.id !== postId));
+
+      // Delete from Supabase
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+        .eq("author_id", user.id); // Ensure only author can delete
+
+      if (error) throw error;
+
+      console.log(`Successfully deleted post ${postId}`);
+      return true;
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      // Revert on error - refetch posts
+      await fetchPosts();
+      return false;
+    }
+  };
+
   const votePost = async (postId, type) => {
     if (!user) {
       console.error("Must be logged in to vote");
@@ -446,6 +475,7 @@ export function PostsProvider({ children }) {
         posts,
         loading,
         addPost,
+        deletePost,
         votePost,
         getTrendingTags,
         stats,

@@ -6,10 +6,12 @@ import {
   Check,
   Bookmark,
   Share2,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { usePosts } from "../../context/postscontext";
+import DeleteConfirmModal from "../DeleteConfirmModal";
 import { useComments } from "../../context/commentscontext";
 import { useAuth } from "../../context/authcontext";
 
@@ -24,15 +26,18 @@ function PostCard({
   description = "Just finished implementing a real-time collaboration, The performance are incredible",
   tags = ["WebSockets", "JavaScript"],
   avatar,
-
+  authorId,
   commentsCount: initialCommentsCount = 15,
   codeSnippet = null,
   language = "javascript",
   image = null,
 }) {
-  const { votePost } = usePosts();
+  const { votePost, deletePost } = usePosts();
   const { getCommentCount } = useComments();
   const { user, toggleBookmark, openLoginModal } = useAuth();
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const isAuthor = user && user.id === authorId;
   const [showCode, setShowCode] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -246,15 +251,29 @@ function PostCard({
                   </span>
                 </button>
               </div>
-              {codeSnippet && (
-                <button
-                  onClick={() => setShowCode(!showCode)}
-                  className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition"
-                >
-                  <Code size={14} />
-                  {showCode ? "Hide Code" : "View Code"}
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {codeSnippet && (
+                  <button
+                    onClick={() => setShowCode(!showCode)}
+                    className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition"
+                  >
+                    <Code size={14} />
+                    {showCode ? "Hide Code" : "View Code"}
+                  </button>
+                )}
+                {isAuthor && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteModal(true);
+                    }}
+                    className="flex items-center gap-1 text-red-400 hover:text-red-300 transition"
+                  >
+                    <Trash2 size={14} />
+                    <span className="hidden md:inline">Delete</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -292,6 +311,16 @@ function PostCard({
           </pre>
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={async () => {
+          await deletePost(id);
+        }}
+        title="Delete Post?"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+      />
     </>
   );
 }

@@ -409,6 +409,88 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // Delete message for current user only
+  const deleteMessageForMe = async (messageId) => {
+    if (!user) return;
+
+    try {
+      // Add to deleted_messages table
+      const { error } = await supabase
+        .from("deleted_messages")
+        .insert({
+          message_id: messageId,
+          user_id: user.id,
+        });
+
+      if (error) throw error;
+
+      // Update local state - remove message from current user's view
+      setChats((prevChats) =>
+        prevChats.map((chat) => ({
+          ...chat,
+          messages: chat.messages.filter((msg) => msg.id !== messageId),
+        }))
+      );
+
+      console.log(`Deleted message ${messageId} for user ${user.id}`);
+    } catch (error) {
+      console.error("Error deleting message for me:", error);
+    }
+  };
+
+  // Delete message for everyone in the conversation
+  const deleteMessageForEveryone = async (messageId, conversationId) => {
+    if (!user) return;
+
+    try {
+      // Update message in database to mark as deleted for everyone
+      const { error } = await supabase
+        .from("messages")
+        .update({
+          deleted_for_everyone: true,
+          deleted_by: user.id,
+          deleted_at: new Date().toISOString(),
+        })
+        .eq("id", messageId)
+        .eq("sender_id", user.id); // Only sender can delete for everyone
+
+      if (error) throw error;
+
+      // Emit socket event to notify other users
+      socket.emit("dm:delete", {
+        messageId,
+        conversationId,
+        deletedBy: user.id,
+      });
+
+      // Update local state - mark message as deleted
+      setChats((prevChats) =>
+        prevChats.map((chat) => {
+          if (chat.id === conversationId) {
+            return {
+              ...chat,
+              messages: chat.messages.map((msg) =>
+                msg.id === messageId
+                  ? {
+                    ...msg,
+                    text: "This message was deleted",
+                    deletedForEveryone: true,
+                    deletedBy: user.id,
+                  }
+                  : msg
+              ),
+            };
+          }
+          return chat;
+        })
+      );
+
+      console.log(`Deleted message ${messageId} for everyone`);
+    } catch (error) {
+      console.error("Error deleting message for everyone:", error);
+    }
+  };
+
   return (
     <ChatContext.Provider
       value={{
@@ -417,6 +499,8 @@ export const ChatProvider = ({ children }) => {
         activeChat,
         selectChat,
         sendMessage,
+        deleteMessageForMe,
+        deleteMessageForEveryone,
         getOrCreateChat,
         isConnected,
         loading,

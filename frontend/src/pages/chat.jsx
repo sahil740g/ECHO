@@ -4,14 +4,17 @@ import { useAuth } from "../context/authcontext";
 import { Send, ArrowLeft, Search, MoreVertical, Smile } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useNavigate, useParams } from "react-router-dom";
+import MessageContextMenu from "../components/MessageContextMenu";
+import { socket } from "../lib/socket";
 
 const Chat = () => {
   // Rename context's selectChat to avoid collision
-  const { chats, sendMessage, selectChat: setContextActiveChat } = useChat();
+  const { chats, sendMessage, selectChat: setContextActiveChat, deleteMessageForMe, deleteMessageForEveryone } = useChat();
   const { user } = useAuth();
   const { chatId } = useParams();
   const [messageInput, setMessageInput] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [contextMenu, setContextMenu] = useState({ isOpen: false, messageId: null, position: { x: 0, y: 0 }, isSender: false });
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
 
@@ -75,6 +78,41 @@ const Chat = () => {
     setMessageInput((prev) => prev + emojiObject.emoji);
     setShowEmojiPicker(false);
   };
+
+  const handleMessageRightClick = (e, msg) => {
+    e.preventDefault();
+    const isMe = msg.senderId === user?.id;
+    setContextMenu({
+      isOpen: true,
+      messageId: msg.id,
+      position: { x: e.clientX, y: e.clientY },
+      isSender: isMe,
+    });
+  };
+
+  const handleDeleteForMe = () => {
+    if (contextMenu.messageId) {
+      deleteMessageForMe(contextMenu.messageId);
+    }
+  };
+
+  const handleDeleteForEveryone = () => {
+    if (contextMenu.messageId && activeChatId) {
+      deleteMessageForEveryone(contextMenu.messageId, activeChatId);
+    }
+  };
+
+  // Socket listener for real-time message deletion
+  useEffect(() => {
+    socket.on("dm:delete", ({ messageId }) => {
+      // The ChatContext will handle updating the message state
+      console.log(`Message ${messageId} deleted by another user`);
+    });
+
+    return () => {
+      socket.off("dm:delete");
+    };
+  }, []);
 
   return (
     // FIX: height calculation to prevent input from being pushed off-screen
@@ -194,6 +232,8 @@ const Chat = () => {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {activeChat.messages && activeChat.messages.map((msg, index) => {
                 const isMe = msg.senderId === (user?.id || "curr_user");
+                const isDeleted = msg.deletedForEveryone || msg.text === "This message was deleted";
+
                 return (
                   // FIX: w-full required for flex justify to work if parent is flex col default? No, just safe.
                   <div
@@ -204,9 +244,10 @@ const Chat = () => {
                       className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMe
                         ? "bg-blue-500 text-white rounded-br-none"
                         : "bg-[#2F3336] text-white rounded-bl-none"
-                        }`}
+                        } ${!isDeleted ? "cursor-pointer" : "italic opacity-60"}`}
+                      onContextMenu={(e) => !isDeleted && handleMessageRightClick(e, msg)}
                     >
-                      <p>{msg.text}</p>
+                      <p>{isDeleted ? "🚫 This message was deleted" : msg.text}</p>
                       <p
                         className={`text-[10px] mt-1 text-right ${isMe ? "text-blue-100" : "text-gray-400"}`}
                       >
@@ -274,6 +315,15 @@ const Chat = () => {
           </div>
         )}
       </div>
+
+      <MessageContextMenu
+        isOpen={contextMenu.isOpen}
+        onClose={() => setContextMenu({ ...contextMenu, isOpen: false })}
+        position={contextMenu.position}
+        onDeleteForMe={handleDeleteForMe}
+        onDeleteForEveryone={handleDeleteForEveryone}
+        isSender={contextMenu.isSender}
+      />
     </div>
   );
 };

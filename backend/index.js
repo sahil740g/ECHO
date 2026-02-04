@@ -146,6 +146,16 @@ io.on("connection", (socket) => {
     socket.to(`dm:${conversationId}`).emit("dm:typing", user);
   });
 
+  // Delete message for everyone
+  socket.on("dm:delete", ({ messageId, conversationId, deletedBy }) => {
+    // Broadcast to all users in the conversation room (including sender)
+    io.to(`dm:${conversationId}`).emit("dm:delete", {
+      messageId,
+      conversationId,
+      deletedBy,
+    });
+  });
+
   socket.on("disconnect", () => {
     onlineUsers.delete(socket.id);
     io.emit("users:online", Array.from(onlineUsers.values()));
