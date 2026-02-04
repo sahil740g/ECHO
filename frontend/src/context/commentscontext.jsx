@@ -388,6 +388,8 @@ export function CommentsProvider({ children }) {
 
     // Persist to database
     try {
+      console.log('[COMMENT VOTE] Starting vote for comment:', commentId, 'type:', type);
+
       const { data: existingVote, error: fetchError } = await supabase
         .from("comment_votes")
         .select("*")
@@ -395,9 +397,15 @@ export function CommentsProvider({ children }) {
         .eq("comment_id", commentId)
         .maybeSingle();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('[COMMENT VOTE] Error fetching existing vote:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('[COMMENT VOTE] Existing vote:', existingVote);
 
       if (existingVote?.vote_type === type) {
+        console.log('[COMMENT VOTE] Removing vote');
         // Remove vote
         const { error: deleteError } = await supabase
           .from("comment_votes")
@@ -405,7 +413,10 @@ export function CommentsProvider({ children }) {
           .eq("user_id", user.id)
           .eq("comment_id", commentId);
 
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          console.error('[COMMENT VOTE] Delete error:', deleteError);
+          throw deleteError;
+        }
 
         // Update comment count
         const { error: rpcError } = await supabase.rpc("decrement_comment_vote", {
@@ -413,8 +424,14 @@ export function CommentsProvider({ children }) {
           vote_type: type,
         });
 
-        if (rpcError) throw rpcError;
+        if (rpcError) {
+          console.error('[COMMENT VOTE] RPC decrement error:', rpcError);
+          throw rpcError;
+        }
+
+        console.log('[COMMENT VOTE] Vote removed successfully');
       } else if (existingVote) {
+        console.log('[COMMENT VOTE] Changing vote from', existingVote.vote_type, 'to', type);
         // Change vote
         const { error: updateError } = await supabase
           .from("comment_votes")
@@ -422,7 +439,10 @@ export function CommentsProvider({ children }) {
           .eq("user_id", user.id)
           .eq("comment_id", commentId);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('[COMMENT VOTE] Update error:', updateError);
+          throw updateError;
+        }
 
         // Update counts (decrement old, increment new)
         const { error: rpcError } = await supabase.rpc("toggle_comment_vote", {
@@ -431,8 +451,14 @@ export function CommentsProvider({ children }) {
           new_type: type,
         });
 
-        if (rpcError) throw rpcError;
+        if (rpcError) {
+          console.error('[COMMENT VOTE] RPC toggle error:', rpcError);
+          throw rpcError;
+        }
+
+        console.log('[COMMENT VOTE] Vote changed successfully');
       } else {
+        console.log('[COMMENT VOTE] Adding new vote');
         // New vote
         const { error: insertError } = await supabase
           .from("comment_votes")
@@ -442,7 +468,10 @@ export function CommentsProvider({ children }) {
             vote_type: type,
           });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('[COMMENT VOTE] Insert error:', insertError);
+          throw insertError;
+        }
 
         // Increment count
         const { error: rpcError } = await supabase.rpc("increment_comment_vote", {
@@ -450,7 +479,12 @@ export function CommentsProvider({ children }) {
           vote_type: type,
         });
 
-        if (rpcError) throw rpcError;
+        if (rpcError) {
+          console.error('[COMMENT VOTE] RPC increment error:', rpcError);
+          throw rpcError;
+        }
+
+        console.log('[COMMENT VOTE] New vote added successfully');
       }
     } catch (error) {
       console.error("Error updating comment vote:", error);
