@@ -244,7 +244,10 @@ const Chat = () => {
                 >
                   <ArrowLeft size={24} />
                 </button>
-                <div className="w-9 h-9 rounded-full bg-gray-600 overflow-hidden mr-3">
+                <div
+                  onClick={() => handleUserClick(getOtherParticipant(activeChat).handle, { stopPropagation: () => { } })}
+                  className="w-9 h-9 rounded-full bg-gray-600 overflow-hidden mr-3 cursor-pointer hover:opacity-80 hover:ring-2 hover:ring-blue-500 transition"
+                >
                   {getOtherParticipant(activeChat).avatar ? (
                     <img
                       src={getOtherParticipant(activeChat).avatar}
@@ -258,7 +261,10 @@ const Chat = () => {
                   )}
                 </div>
                 <div>
-                  <h2 className="font-bold">
+                  <h2
+                    onClick={() => handleUserClick(getOtherParticipant(activeChat).handle, { stopPropagation: () => { } })}
+                    className="font-bold cursor-pointer hover:text-blue-400 transition"
+                  >
                     {getOtherParticipant(activeChat).name}
                   </h2>
                   <p className="text-xs text-gray-500">
