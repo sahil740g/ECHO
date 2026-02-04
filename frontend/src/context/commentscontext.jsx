@@ -487,14 +487,9 @@ export function CommentsProvider({ children }) {
         console.log('[COMMENT VOTE] New vote added successfully');
       }
 
-      // Refresh comments to get updated counts from database
-      try {
-        console.log('[COMMENT VOTE] Refreshing comments to get updated counts');
-        await fetchComments(postId, true, true);
-      } catch (refreshError) {
-        console.warn('[COMMENT VOTE] Failed to refresh comments:', refreshError);
-        // Don't throw here - the vote was successful, just the refresh failed
-      }
+      // No need to refresh immediately - optimistic update is sufficient 
+      // and refreshing too fast can cause stale reads (flicker)
+      console.log('[COMMENT VOTE] Vote persisted successfully');
     } catch (error) {
       console.error("Error updating comment vote:", error);
       // Revert optimistic update on error (only if the vote itself failed)

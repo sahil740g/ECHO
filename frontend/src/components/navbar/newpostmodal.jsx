@@ -14,6 +14,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const [codeSnippet, setCodeSnippet] = useState("");
     const [language, setLanguage] = useState("javascript");
     const [image, setImage] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
     const [showCodeInput, setShowCodeInput] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const fileInputRef = useRef(null); // Import useRef at top level if not imported
@@ -61,6 +62,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImage(reader.result);
@@ -78,7 +80,10 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
             tags: tags.split(",").map(tag => tag.trim()).filter(tag => tag),
             codeSnippet: showCodeInput ? codeSnippet : null,
             language: showCodeInput ? language : null,
+            codeSnippet: showCodeInput ? codeSnippet : null,
+            language: showCodeInput ? language : null,
             image: image,
+            imageFile: imageFile,
             type: isQuery ? 'query' : 'post',
             username: user ? user.name : "Anonymous",
             handle: user ? user.handle : "@anonymous",
@@ -113,7 +118,9 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         setDescription("");
         setTags("");
         setCodeSnippet("");
+        setCodeSnippet("");
         setImage(null);
+        setImageFile(null);
         setShowCodeInput(false);
         setShowEmojiPicker(false);
         setSuggestions([]);
@@ -191,7 +198,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
                                 <div className="mt-2 relative inline-block">
                                     <img src={image} alt="Preview" className="max-h-40 rounded-lg border border-white/10" />
                                     <button
-                                        onClick={() => setImage(null)}
+                                        onClick={() => { setImage(null); setImageFile(null); }}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition"
                                     >
                                         <X size={12} />

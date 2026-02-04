@@ -109,6 +109,7 @@ export function PostsProvider({ children }) {
         commentsCount: post.comments?.[0]?.count || 0, // Extract count from response
         codeSnippet: post.code_snippet,
         type: post.type || "post",
+        image: post.image,
         userVote: userVotesMap[post.id] || null, // Set correct user vote
       }));
 
@@ -163,6 +164,25 @@ export function PostsProvider({ children }) {
     }
 
     try {
+      let imageUrl = null;
+
+      if (newPost.imageFile) {
+        const fileExt = newPost.imageFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, newPost.imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(fileName);
+
+        imageUrl = publicUrl;
+      }
+
       const { data, error } = await supabase
         .from("posts")
         .insert({
@@ -173,6 +193,7 @@ export function PostsProvider({ children }) {
           tags: newPost.tags || [],
           type: newPost.type || "post",
           votes: 0,
+          image: imageUrl,
         })
         .select(
           `
@@ -203,6 +224,7 @@ export function PostsProvider({ children }) {
         commentsCount: 0,
         codeSnippet: data.code_snippet,
         type: data.type,
+        image: data.image,
         userVote: null,
       };
 
