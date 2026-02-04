@@ -190,13 +190,13 @@ function Comment({ comment, postId = "1" }) {
                         onClick={() => likeComment(postId, comment.id, 'up')}
                         className={`flex items-center gap-1 transition ${comment.userVote === 'up' ? 'text-blue-500' : 'hover:text-white'}`}
                     >
-                        <ThumbsUp size={14} className={comment.userVote === 'up' ? 'fill-blue-500' : ''} /> {comment.likes}
+                        <ThumbsUp size={14} className={comment.userVote === 'up' ? 'fill-blue-500' : ''} /> {comment.likes || 0}
                     </button>
                     <button
                         onClick={() => likeComment(postId, comment.id, 'down')}
                         className={`flex items-center gap-1 transition ${comment.userVote === 'down' ? 'text-red-500' : 'hover:text-white'}`}
                     >
-                        <ThumbsDown size={14} className={comment.userVote === 'down' ? 'fill-red-500' : ''} /> {comment.dislikes > 0 && comment.dislikes}
+                        <ThumbsDown size={14} className={comment.userVote === 'down' ? 'fill-red-500' : ''} /> {comment.dislikes || 0}
                     </button>
                     <button
                         onClick={() => setIsReplying(!isReplying)}
