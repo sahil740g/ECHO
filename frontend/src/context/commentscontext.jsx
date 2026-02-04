@@ -64,6 +64,24 @@ export function CommentsProvider({ children }) {
           };
         });
 
+        // Fetch user's votes if logged in
+        if (user && data.length > 0) {
+          const commentIds = data.map((c) => c.id);
+          const { data: userVotes, error: votesError } = await supabase
+            .from("comment_votes")
+            .select("comment_id, vote_type")
+            .eq("user_id", user.id)
+            .in("comment_id", commentIds);
+
+          if (!votesError && userVotes) {
+            userVotes.forEach((vote) => {
+              if (commentsMap[vote.comment_id]) {
+                commentsMap[vote.comment_id].userVote = vote.vote_type;
+              }
+            });
+          }
+        }
+
         // Build tree
         Object.values(commentsMap).forEach((comment) => {
           if (comment.parentId && commentsMap[comment.parentId]) {
@@ -305,8 +323,13 @@ export function CommentsProvider({ children }) {
     }
   };
 
-  const likeComment = (postId, commentId, type) => {
-    // Local-only for now (comment votes table not in schema)
+  const likeComment = async (postId, commentId, type) => {
+    if (!user) {
+      console.error("Must be logged in to vote on comments");
+      return;
+    }
+
+    // Optimistic update - update local state immediately
     const updateVote = (comments) => {
       return comments.map((comment) => {
         if (comment.id === commentId) {
@@ -315,10 +338,12 @@ export function CommentsProvider({ children }) {
           let newUserVote = comment.userVote;
 
           if (newUserVote === type) {
+            // Remove vote
             if (type === "up") newLikes--;
             else newDislikes--;
             newUserVote = null;
           } else if (newUserVote) {
+            // Change vote
             if (type === "up") {
               newLikes++;
               newDislikes--;
@@ -328,6 +353,7 @@ export function CommentsProvider({ children }) {
             }
             newUserVote = type;
           } else {
+            // New vote
             if (type === "up") newLikes++;
             else newDislikes++;
             newUserVote = type;
@@ -335,8 +361,8 @@ export function CommentsProvider({ children }) {
 
           return {
             ...comment,
-            likes: newLikes,
-            dislikes: newDislikes,
+            likes: Math.max(0, newLikes),
+            dislikes: Math.max(0, newDislikes),
             userVote: newUserVote,
           };
         }
@@ -347,6 +373,7 @@ export function CommentsProvider({ children }) {
       });
     };
 
+    // Apply optimistic update
     setCommentsByPost((prev) => {
       const existing = prev[postId];
       if (!existing) return prev;
@@ -358,6 +385,78 @@ export function CommentsProvider({ children }) {
         },
       };
     });
+
+    // Persist to database
+    try {
+      const { data: existingVote, error: fetchError } = await supabase
+        .from("comment_votes")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("comment_id", commentId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existingVote?.vote_type === type) {
+        // Remove vote
+        const { error: deleteError } = await supabase
+          .from("comment_votes")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("comment_id", commentId);
+
+        if (deleteError) throw deleteError;
+
+        // Update comment count
+        const { error: rpcError } = await supabase.rpc("decrement_comment_vote", {
+          comment_id: commentId,
+          vote_type: type,
+        });
+
+        if (rpcError) throw rpcError;
+      } else if (existingVote) {
+        // Change vote
+        const { error: updateError } = await supabase
+          .from("comment_votes")
+          .update({ vote_type: type })
+          .eq("user_id", user.id)
+          .eq("comment_id", commentId);
+
+        if (updateError) throw updateError;
+
+        // Update counts (decrement old, increment new)
+        const { error: rpcError } = await supabase.rpc("toggle_comment_vote", {
+          comment_id: commentId,
+          old_type: existingVote.vote_type,
+          new_type: type,
+        });
+
+        if (rpcError) throw rpcError;
+      } else {
+        // New vote
+        const { error: insertError } = await supabase
+          .from("comment_votes")
+          .insert({
+            user_id: user.id,
+            comment_id: commentId,
+            vote_type: type,
+          });
+
+        if (insertError) throw insertError;
+
+        // Increment count
+        const { error: rpcError } = await supabase.rpc("increment_comment_vote", {
+          comment_id: commentId,
+          vote_type: type,
+        });
+
+        if (rpcError) throw rpcError;
+      }
+    } catch (error) {
+      console.error("Error updating comment vote:", error);
+      // Revert optimistic update on error
+      fetchComments(postId);
+    }
   };
 
   const getCommentCount = (postId) => {

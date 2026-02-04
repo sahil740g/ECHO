@@ -152,22 +152,33 @@ function Comment({ comment, postId = "1" }) {
                         </button>
 
                         {showCode && (
-                            <div className="rounded-lg border border-white/10 overflow-hidden bg-[#0d1117] max-w-2xl">
-                                <div className="flex justify-between items-center px-3 py-2 bg-[#0d1117] border-b border-white/5">
-                                    <div className="flex gap-1.5">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/50" />
-                                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
-                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/50" />
+                            <div className="w-full bg-[#161b22]/80 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden shadow-lg">
+                                <div className="flex justify-between items-center px-4 md:px-5 py-3 bg-[#0d1117] border-b border-white/5">
+                                    <div className="flex gap-2 shrink-0">
+                                        <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                                        <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                                        <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
                                     </div>
-                                    <span className="text-[10px] font-mono text-zinc-500 ml-2 mr-auto">{comment.language || 'javascript'}</span>
-                                    <button onClick={handleCopy}
-                                        className="flex items-center gap-1 hover:text-white transition text-[10px] text-zinc-500 font-medium">
-                                        {isCopied ? <Check size={10} className="text-green-500" /> : null}
-                                        {isCopied ? "Copied!" : "Copy"}
+                                    <span className="text-xs md:text-sm font-mono text-zinc-400 uppercase tracking-wider flex-1 text-center">
+                                        {comment.language || 'javascript'}
+                                    </span>
+                                    <button
+                                        onClick={handleCopy}
+                                        className="flex items-center gap-2 hover:text-white transition text-xs md:text-sm font-medium text-zinc-400 shrink-0 w-[110px] md:w-[120px] justify-end whitespace-nowrap"
+                                    >
+                                        {isCopied ? (
+                                            <Check size={16} className="text-green-500" />
+                                        ) : (
+                                            <Code size={16} />
+                                        )}
+                                        <span className="hidden sm:inline">{isCopied ? "Copied!" : "Copy Code"}</span>
+                                        <span className="sm:hidden">{isCopied ? "✓" : "Copy"}</span>
                                     </button>
                                 </div>
-                                <pre className="p-3 text-xs overflow-x-auto">
-                                    <code className="text-green-400 whitespace-pre">{comment.codeSnippet}</code>
+                                <pre className="p-4 md:p-6 text-xs md:text-sm overflow-x-auto bg-[#0d1117] max-w-full">
+                                    <code className="text-green-400 whitespace-pre font-mono block">
+                                        {comment.codeSnippet}
+                                    </code>
                                 </pre>
                             </div>
                         )}

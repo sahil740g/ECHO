@@ -304,8 +304,8 @@ function PostCard({
               <span className="sm:hidden">{isCopied ? "✓" : "Copy"}</span>
             </button>
           </div>
-          <pre className="p-4 md:p-6 text-xs md:text-sm overflow-x-auto bg-[#0d1117]">
-            <code className="text-green-400 whitespace-pre font-mono">
+          <pre className="p-4 md:p-6 text-xs md:text-sm overflow-x-auto bg-[#0d1117] max-w-full">
+            <code className="text-green-400 whitespace-pre font-mono block">
               {codeSnippet}
             </code>
           </pre>
