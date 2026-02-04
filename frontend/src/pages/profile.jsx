@@ -15,6 +15,7 @@ import {
   Tag,
   UserCircle,
   MessageSquare,
+  ThumbsUp,
 } from "lucide-react";
 import { useAuth } from "../context/authcontext";
 import { useChat } from "../context/ChatContext";
@@ -249,25 +250,93 @@ function Profile() {
         following: fetchedUser?.stats?.following ?? displayUser.stats?.following ?? (Array.isArray(displayUser.following) ? displayUser.following.length : 0),
         posts: userPosts.length,
       },
-      achievements: displayUser.achievements || [
-        {
-          icon: <Trophy className="text-yellow-500" size={20} />,
-          title: "Top Contributor",
-          desc: "Top 1% in Jan",
-        },
-        {
-          icon: <Share2 className="text-blue-500" size={20} />,
-          title: "Viral Post",
-          desc: "Post reached 10k views",
-        },
-        {
-          icon: <Edit2 className="text-green-500" size={20} />,
-          title: "Writer",
-          desc: "Published 10+ articles",
-        },
-      ],
     }
     : null;
+
+  // Calculate achievements dynamically AFTER profileData is defined
+  const calculateAchievements = () => {
+    if (!profileData) return [];
+
+    const achievements = [];
+    const postsCount = userPosts.length;
+    const followersCount = profileData.stats?.followers || 0;
+
+    // Calculate total votes from user's posts
+    const totalVotes = userPosts.reduce((sum, post) => sum + (post.votes || 0), 0);
+
+    // Posts Milestone Achievement
+    if (postsCount >= 25) {
+      achievements.push({
+        icon: <Edit2 className="text-green-500" size={20} />,
+        title: "Content Creator",
+        desc: "Published 25+ posts",
+      });
+    } else if (postsCount >= 10) {
+      achievements.push({
+        icon: <Edit2 className="text-green-500" size={20} />,
+        title: "Prolific Writer",
+        desc: "Published 10+ posts",
+      });
+    } else if (postsCount >= 5) {
+      achievements.push({
+        icon: <Edit2 className="text-green-500" size={20} />,
+        title: "Active Contributor",
+        desc: "Published 5+ posts",
+      });
+    } else if (postsCount >= 1) {
+      achievements.push({
+        icon: <Edit2 className="text-green-500" size={20} />,
+        title: "First Post",
+        desc: "Posted their first thought",
+      });
+    }
+
+    // Followers Milestone Achievement
+    if (followersCount >= 100) {
+      achievements.push({
+        icon: <Trophy className="text-yellow-500" size={20} />,
+        title: "Community Leader",
+        desc: "Reached 100+ followers",
+      });
+    } else if (followersCount >= 50) {
+      achievements.push({
+        icon: <Trophy className="text-yellow-500" size={20} />,
+        title: "Influencer",
+        desc: "Reached 50 followers",
+      });
+    } else if (followersCount >= 10) {
+      achievements.push({
+        icon: <Trophy className="text-yellow-500" size={20} />,
+        title: "Getting Popular",
+        desc: "Reached 10 followers",
+      });
+    }
+
+    // Engagement Milestone Achievement (based on total votes)
+    if (totalVotes >= 100) {
+      achievements.push({
+        icon: <ThumbsUp className="text-blue-500" size={20} />,
+        title: "Highly Valued",
+        desc: "Received 100+ votes",
+      });
+    } else if (totalVotes >= 50) {
+      achievements.push({
+        icon: <ThumbsUp className="text-blue-500" size={20} />,
+        title: "Well Received",
+        desc: "Received 50+ votes",
+      });
+    } else if (totalVotes >= 10) {
+      achievements.push({
+        icon: <ThumbsUp className="text-blue-500" size={20} />,
+        title: "First Upvotes",
+        desc: "Received 10+ votes",
+      });
+    }
+
+    return achievements;
+  };
+
+  const userAchievements = calculateAchievements();
 
   const handleSaveProfile = (updatedData) => {
     updateUser(updatedData);
@@ -641,9 +710,16 @@ function Profile() {
             ) : (
               <div className="space-y-6">
                 {fetchedTaggedPosts.length > 0 ? (
-                  fetchedTaggedPosts.map((post) => (
-                    <PostCard key={post.id} {...post} />
-                  ))
+                  fetchedTaggedPosts.map((post) => {
+                    // Transform Supabase nested profile data to PostCard format
+                    const transformedPost = {
+                      ...post,
+                      username: post.profiles?.name || "Unknown User",
+                      handle: post.profiles?.handle || "@unknown",
+                      avatar: post.profiles?.avatar_url || null,
+                    };
+                    return <PostCard key={post.id} {...transformedPost} />;
+                  })
                 ) : (
                   <div className="py-20 text-center">
                     <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-500">
@@ -670,22 +746,28 @@ function Profile() {
               Achievements
             </h3>
             <div className="space-y-5">
-              {profileData.achievements.map((ach, i) => (
-                <div
-                  key={i}
-                  className="flex gap-3 items-center group cursor-pointer"
-                >
-                  <div className="text-zinc-400 group-hover:text-white transition">
-                    {ach.icon}
+              {userAchievements.length > 0 ? (
+                userAchievements.map((ach, i) => (
+                  <div
+                    key={i}
+                    className="flex gap-3 items-center group cursor-pointer"
+                  >
+                    <div className="text-zinc-400 group-hover:text-white transition">
+                      {ach.icon}
+                    </div>
+                    <div>
+                      <h4 className="text-zinc-200 text-sm font-medium">
+                        {ach.title}
+                      </h4>
+                      <p className="text-zinc-500 text-xs mt-0.5">{ach.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-zinc-200 text-sm font-medium">
-                      {ach.title}
-                    </h4>
-                    <p className="text-zinc-500 text-xs mt-0.5">{ach.desc}</p>
-                  </div>
+                ))
+              ) : (
+                <div className="text-zinc-500 text-sm italic">
+                  No achievements yet. Keep posting and engaging!
                 </div>
-              ))}
+              )}
             </div>
           </div>
 

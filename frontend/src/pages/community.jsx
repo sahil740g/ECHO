@@ -4,9 +4,11 @@ import { useAuth } from "../context/authcontext";
 import { supabase } from "../lib/supabase";
 import { socket } from "../lib/socket";
 import EmojiPicker from "emoji-picker-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Community() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -146,6 +148,13 @@ export default function Community() {
     }
   };
 
+  const handleUserClick = (handle) => {
+    if (handle) {
+      const cleanHandle = handle.replace('@', '');
+      navigate(`/profile/${cleanHandle}`);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] bg-[#0d1117] overflow-hidden w-full relative">
       {/* MAIN CHAT AREA */}
@@ -204,7 +213,8 @@ export default function Community() {
                         (msg.avatar ? (
                           <img
                             src={msg.avatar}
-                            className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition"
+                            onClick={() => handleUserClick(msg.handle)}
+                            className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 hover:ring-2 hover:ring-blue-500 transition"
                             alt={msg.user}
                           />
                         ) : (
@@ -226,7 +236,8 @@ export default function Community() {
                       {!isSequence && (
                         <div className="flex items-baseline gap-2">
                           <span
-                            className={`font-semibold hover:underline cursor-pointer ${msg.senderId === user?.id ? "text-blue-400" : "text-white"}`}
+                            onClick={() => handleUserClick(msg.handle)}
+                            className={`font-semibold hover:underline cursor-pointer transition ${msg.senderId === user?.id ? "text-blue-400" : "text-white"}`}
                           >
                             {msg.user}
                           </span>

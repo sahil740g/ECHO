@@ -106,6 +106,14 @@ const Chat = () => {
     setFilePreview(null);
   };
 
+  const handleUserClick = (handle, e) => {
+    e.stopPropagation(); // Prevent chat selection
+    if (handle) {
+      const cleanHandle = handle.replace('@', '');
+      navigate(`/profile/${cleanHandle}`);
+    }
+  };
+
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], {
       hour: "2-digit",
@@ -175,7 +183,10 @@ const Chat = () => {
                 onClick={() => handleChatSelect(chat.id)}
                 className={`flex items-center p-4 hover:bg-[#16181C] cursor-pointer transition-colors ${activeChatId === chat.id ? "bg-[#16181C] border-r-2 border-blue-500" : ""}`}
               >
-                <div className="w-10 h-10 rounded-full bg-gray-600 overflow-hidden shrink-0 mr-3">
+                <div
+                  onClick={(e) => handleUserClick(otherUser.handle, e)}
+                  className="w-10 h-10 rounded-full bg-gray-600 overflow-hidden shrink-0 mr-3 cursor-pointer hover:opacity-80 hover:ring-2 hover:ring-blue-500 transition"
+                >
                   {otherUser.avatar ? (
                     <img
                       src={otherUser.avatar}
@@ -190,7 +201,12 @@ const Chat = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline">
-                    <span className="font-bold truncate">{otherUser.name}</span>
+                    <span
+                      onClick={(e) => handleUserClick(otherUser.handle, e)}
+                      className="font-bold truncate cursor-pointer hover:text-blue-400 transition"
+                    >
+                      {otherUser.name}
+                    </span>
                     <span className="text-xs text-gray-500">
                       {lastMessage ? formatTime(lastMessage.timestamp) : ""}
                     </span>

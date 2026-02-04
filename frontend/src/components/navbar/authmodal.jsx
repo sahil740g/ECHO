@@ -70,7 +70,14 @@ const AuthModal = ({ isOpen, onClose }) => {
         onClose();
       }
     } catch (err) {
-      setError(err.message || "Failed to sign up");
+      // Check for duplicate username/handle error
+      if (err.message?.includes('duplicate key') ||
+        err.message?.includes('unique constraint') ||
+        err.code === '23505') {
+        setError("Username not available. Please try a different email address.");
+      } else {
+        setError(err.message || "Failed to sign up");
+      }
     } finally {
       setLoading(false);
     }
