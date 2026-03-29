@@ -104,7 +104,7 @@ function Profile() {
               .select('id')
               .eq('follower_id', user.id)
               .eq('following_id', profile.id)
-              .single();
+              .maybeSingle();
             serverIsFollowing = !!followData;
           }
 
