@@ -77,9 +77,9 @@ const About = () => {
                                 name: "Swatipayal Mohanty",
                                 role: "Backend Developer",
                                 desc: "Building bridges between ECHO and the global developer ecosystem. Swatipayal organizes our hackathons, manages the mentorship program, and ensures that every voice in the community is heard and valued.",
-                                github: "#",
-                                githubUser: "swatipayal",
-                                linkedin: "#",
+                                github: "https://github.com/swati-7205",
+                                githubUser: "swati-7205",
+                                linkedin: "https://www.linkedin.com/in/swatipayal-mohanty-7a0026347?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
                                 linkedinUser: "Swatipayal Mohanty"
                             }
                         ].map((dev, i) => (
