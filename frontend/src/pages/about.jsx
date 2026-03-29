@@ -43,6 +43,19 @@ const About = () => {
                 </div>
 
                 <div>
+                    <h2 className="text-lg font-bold text-white mb-6">Project Guide</h2>
+                    <div className="flex items-start gap-4 p-4 bg-[#161b22] border border-white/5 rounded-xl hover:border-white/10 transition-colors">
+                        <div>
+                            <div className="flex items-baseline gap-2 mb-1">
+                                <h3 className="text-white font-medium">Prof. Nitasha Dash</h3>
+                                <span className="text-purple-400 text-xs font-medium">Mentor & Guide</span>
+                            </div>
+                            <p className="text-zinc-400 text-sm leading-relaxed mb-4">Providing valuable mentorship, academic guidance, and direction for the successful development of the ECHO project.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
                     <h2 className="text-lg font-bold text-white mb-6">Meet the Builders</h2>
                     <div className="grid gap-6">
                         {[
