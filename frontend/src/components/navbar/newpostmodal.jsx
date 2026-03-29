@@ -77,7 +77,7 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         const newPost = {
             title,
             description,
-            tags: tags.split(",").map(tag => tag.trim()).filter(tag => tag),
+            tags: tags.split(",").map(tag => tag.trim().toLowerCase()).filter(tag => tag),
             codeSnippet: showCodeInput ? codeSnippet : null,
             language: showCodeInput ? language : null,
             codeSnippet: showCodeInput ? codeSnippet : null,

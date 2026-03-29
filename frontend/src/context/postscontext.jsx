@@ -105,7 +105,7 @@ export function PostsProvider({ children }) {
         time: getRelativeTime(post.created_at),
         title: post.title,
         description: post.description,
-        tags: post.tags || [],
+        tags: Array.isArray(post.tags) ? post.tags.map(t => t.toLowerCase()) : [],
         commentsCount: post.comments?.[0]?.count || 0, // Extract count from response
         codeSnippet: post.code_snippet,
         type: post.type || "post",
@@ -411,7 +411,7 @@ export function PostsProvider({ children }) {
     posts.forEach((post) => {
       if (post.tags && Array.isArray(post.tags)) {
         post.tags.forEach((tag) => {
-          const normalizedTag = tag.trim();
+          const normalizedTag = tag.trim().toLowerCase();
           tagCounts[normalizedTag] = (tagCounts[normalizedTag] || 0) + 1;
         });
       }
