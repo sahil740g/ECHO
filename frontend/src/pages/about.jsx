@@ -70,7 +70,7 @@ const About = () => {
                                 desc: "Crafting distinct visual identities and seamless workflows. Tahsin bridges the gap between engineering and art, ensuring that every pixel serves a purpose. He is a minimalist at heart and a typography nerd.",
                                 github: "#",
                                 githubUser: "tahsinali",
-                                linkedin: "#",
+                                linkedin: "https://www.linkedin.com/in/tahsin-ali-6a056a3a7?utm_source=share_via&utm_content=profile&utm_medium=member_android",
                                 linkedinUser: "Sk Tahsin Ali"
                             },
                             {
