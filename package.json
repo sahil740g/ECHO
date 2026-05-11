@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "framer-motion": "^12.38.0",
+    "geist": "^1.7.0",
+    "lucide-react": "^1.14.0",
+    "shiki": "^4.0.2"
+  }
+}

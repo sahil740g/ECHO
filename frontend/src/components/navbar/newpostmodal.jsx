@@ -80,8 +80,6 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
             tags: tags.split(",").map(tag => tag.trim().toLowerCase()).filter(tag => tag),
             codeSnippet: showCodeInput ? codeSnippet : null,
             language: showCodeInput ? language : null,
-            codeSnippet: showCodeInput ? codeSnippet : null,
-            language: showCodeInput ? language : null,
             image: image,
             imageFile: imageFile,
             type: isQuery ? 'query' : 'post',
@@ -117,7 +115,6 @@ const NewPostModal = ({ isOpen, onClose, isQuery = false }) => {
         setTitle("");
         setDescription("");
         setTags("");
-        setCodeSnippet("");
         setCodeSnippet("");
         setImage(null);
         setImageFile(null);
